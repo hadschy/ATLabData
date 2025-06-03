@@ -1,5 +1,6 @@
 # TODO: proper resolution scaling
 
+
 function save_for_LaTeX(
         data::Data, 
         outdir::String; 

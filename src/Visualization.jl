@@ -2,9 +2,10 @@ module Visualization
 
 using CairoMakie
 using GLMakie
+using LaTeXStrings
 using ..DataStructures: 
     Data, AveragesData
-using LaTeXStrings
+using ..IO: load
 
 include("Visualization/Data2DVisualization.jl")
 include("Visualization/AverageDataVisualization.jl")

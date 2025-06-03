@@ -1,7 +1,7 @@
 module DataOperations
 
-import Base: +, -, *, ^, size, display, abs #, view
-# using Base
+import Base: +, -, *, ^, size, display, abs
+
 using Base.Threads
 using Interpolations: interpolate, Gridded, Linear
 using FiniteDifferences: central_fdm, grad
@@ -46,7 +46,7 @@ Does the same as '''subtract(data1, data2)'''
     yfield = data1.yfield .- data2.yfield,
     zfield = data1.zfield .- data2.zfield
 )
--(data1::AveragesData, daat2::AveragesData)::AveragesData = AveragesData(
+-(data1::AveragesData, data2::AveragesData)::AveragesData = AveragesData(
     name = "$(data1.name)-$(data2.name)",
     time = data1.time,
     range = data1.range,
@@ -194,9 +194,6 @@ function display(data::Grid)
     print("   nx: "); println(data.nx)
     print("   ny: "); println(data.ny)
     print("   nz: "); println(data.nz)
-    print("   dx: "); println(data.dx)
-    print("   dy: "); println(data.dy)
-    print("   dz: "); println(data.dz)
     print("   scalex: "); println(data.scalex)
     print("   scaley: "); println(data.scaley)
     print("   scalez: "); println(data.scalez)

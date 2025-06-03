@@ -68,7 +68,7 @@ function Grid_from_gridfile(gridfile::String)::Grid
     return Grid{Float64}(
         nx=nx, ny=ny, nz=nz, 
         lx=scalex, ly=scaley, lz=scalez, 
-        x=x, y=y
+        x=x, y=y, z=z
     )
 end
 
