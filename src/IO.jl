@@ -7,10 +7,10 @@ export load, file_for_time, Grid_from_file, search_inifile
 
 
 """
-    load(file) -> Data
+    load(file) -> ScalarData
 Load the data contained in the path _file_ into the type _Data_.
 
-    load(dir, field, time) -> Data
+    load(dir, field, time) -> ScalarData
 Search in _dir_ for the file containing _field_ at _time_ and load into the type 
 _Data_.
 
@@ -22,8 +22,8 @@ type _VectorData_.
 Load the data contained in the path _file_ into the type _AveragesData_.
 _file_ has to be NetCDF file containing the averages from _average.x_.
 """
-load(file::String)::Data = Data_from_file(file)
-load(dir::String, field::String, time::Real; component::String=".0")::Data = load(file_for_time(dir, time, field, component))
+load(file::String)::ScalarData = ScalarData_from_file(file)
+load(dir::String, field::String, time::Real; component::String=".0")::ScalarData = load(file_for_time(dir, time, field, component))
 
 load(xfile::String, yfile::String, zfile::String)::VectorData = VectorData_from_files(xfile, yfile, zfile)
 
@@ -65,7 +65,7 @@ function Grid_from_gridfile(gridfile::String)::Grid
     for i ∈ 1:nz
         z[i] = read(io, Float64)
     end
-    return Grid{Float64}(
+    return Grid{Float64, Int32}(
         nx=nx, ny=ny, nz=nz, 
         lx=scalex, ly=scaley, lz=scalez, 
         x=x, y=y, z=z
@@ -110,13 +110,13 @@ function Grid_from_file(dir::String)::Grid
 end
 
 
-function Data_from_file(fieldfile::String)::Data
-    verbose("Data", fieldfile)
+function ScalarData_from_file(fieldfile::String)::ScalarData
+    verbose("ScalarData", fieldfile)
     grid = Grid_from_file(dirname(fieldfile))
     mat = Array_from_file(grid, fieldfile)
     name = splitpath(fieldfile)[end]
     time = time_from_file(fieldfile)
-    return Data(grid=grid, field=mat, name=name, time=time)
+    return ScalarData{Float64, Float32, Int32}(grid=grid, field=mat, name=name, time=time)
 end
 
 
@@ -127,7 +127,7 @@ function VectorData_from_files(
     )
     verbose("VectorData", xfieldfile, yfieldfile, zfieldfile)
     grid = Grid_from_file(dirname(xfieldfile))
-    return VectorData(
+    return VectorData{Float32, Int32}(
         name = string(splitpath(xfieldfile)[end][1:end-2]),
         grid = grid,
         time = time_from_file(xfieldfile),
