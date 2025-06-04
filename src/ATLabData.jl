@@ -1,5 +1,5 @@
 """
-Module to load, process and visualise data from TLab in Julia.
+Module to load, process and visualise data from ATLab in Julia.
 """
 module ATLabData
 

@@ -238,6 +238,8 @@ function animate(
         outfile::String=joinpath(dir, "video/$(field).mp4"),
         slice::Int=1
     )
+    println("Animating:")
+    printstyled("   $(dir)", color=:cyan)
     filenames = filter(x -> startswith(x, field), readdir(dir, join=false))
     file = joinpath(dir, filenames[1])
     data = loader(file)
