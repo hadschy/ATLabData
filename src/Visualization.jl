@@ -1,7 +1,15 @@
 module Visualization
 
-using CairoMakie
-using GLMakie
+if !haskey(ENV, "DISPLAY") || get(ENV, "CI", "") == "true"
+    # Headless environment
+    @info "Using CairoMakie in headless mode"
+    using CairoMakie
+else
+    using GLMakie
+end
+
+# using CairoMakie
+# using GLMakie
 using LaTeXStrings
 using ..DataStructures: 
     Data, AveragesData
