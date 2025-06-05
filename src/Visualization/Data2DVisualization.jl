@@ -123,7 +123,7 @@ function visualize(
     #         backgroundcolor=:transparent
     #     )
     # else
-        printstyled("   Backend: CairoMakie \n", color=:gray, italic=true)
+        printstyled("   Backend: CairoMakie \n", color=:light_black)
         CairoMakie.activate!()
         fontsize = round(Int, fontsizescaling*fontsize)
         fig = Figure(
@@ -234,7 +234,7 @@ function animate(
         fps::Int=2,
         loader::Function=load,
         visualizer::Function=visualize,
-        live::Bool=false,
+        # live::Bool=false,
         outfile::String=joinpath(dir, "video/$(field).mp4"),
         slice::Int=1
     )
