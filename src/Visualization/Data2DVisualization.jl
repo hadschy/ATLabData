@@ -231,6 +231,7 @@ end
 function animate(
         dir::String, 
         field::String;
+        component::String="0",
         fps::Int=2,
         loader::Function=load,
         visualizer::Function=visualize,
@@ -241,6 +242,9 @@ function animate(
     println("Animating:")
     printstyled("   $(dir)", color=:cyan)
     filenames = filter(x -> startswith(x, field), readdir(dir, join=false))
+    if component != "0"
+        filenames = filter(x -> endswith(x, component), filenames)
+    end
     file = joinpath(dir, filenames[1])
     data = loader(file)
     fig, ax, hm = visualizer(data)

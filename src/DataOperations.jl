@@ -434,7 +434,7 @@ function rms(data::Data; coord=3)::AveragesData
         range = convert(Vector{Float32}, data.grid.y)
     elseif coord==3
         for i ∈ 1:nv
-            s = sum(view(data.field, :, :, 3).^2)
+            s = sum(view(data.field, :, :, i).^2)
             res[i] = sqrt(s/nh)
         end
         range = convert(Vector{Float32}, data.grid.z)
