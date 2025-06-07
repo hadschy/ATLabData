@@ -22,7 +22,7 @@ export rms, average
     size(data)
 Returns `sìze(data.field)`.
 """
-size(data::Data)::Tuple = size(data.field)
+size(data::ScalarData)::Tuple = size(data.field)
 size(data::VectorData)::Tuple = (size(data.xfield), size(data.yfield), size(data.zfield))
 size(data::AveragesData)::Tuple = size(data.field)
 
@@ -32,13 +32,13 @@ size(data::AveragesData)::Tuple = size(data.field)
 Subtract the _field_ of _data2_ from the _field_ of _data1_. 
 Does the same as '''subtract(data1, data2)'''
 """
--(data1::Data, data2::Data) = Data(
+-(data1::ScalarData, data2::ScalarData)::ScalarData = ScalarData(
     name = "$(data1.name)-$(data2.name)",
     field = data1.field .- data2.field,
     time = data1.time,
     grid = data1.grid
 )
--(data1::VectorData, data2::VectorData) = VectorData(
+-(data1::VectorData, data2::VectorData)::VectorData = VectorData(
     name = "$(data1.name)-$(data2.name)",
     grid = data1.grid,
     time = data1.time,
@@ -58,13 +58,13 @@ Does the same as '''subtract(data1, data2)'''
     data1 + data2
 Add the _fields_ of _data1_ and _data2_. Does the same as '''add(data1, data2)'''
 """
-+(data1::Data, data2::Data) = Data(
++(data1::ScalarData, data2::ScalarData)::ScalarData = ScalarData(
     field = data1.field .+ data2.field,
     time = data1.time,
     grid = data1.grid,
     name = data1.name*"+"*data2.name
 )
-+(data1::VectorData, data2::VectorData) = VectorData(
++(data1::VectorData, data2::VectorData)::VectorData = VectorData(
     name = data1.name * "+" * data2.name,
     grid = data1.grid,
     time = data1.time,
@@ -80,7 +80,6 @@ Add the _fields_ of _data1_ and _data2_. Does the same as '''add(data1, data2)''
 )
 
 
-
 """
     data * factor
 Multiply the _field_ of _data_ with _factor_. Does the same as _rescale_.
@@ -88,13 +87,13 @@ Multiply the _field_ of _data_ with _factor_. Does the same as _rescale_.
     data1 * data2
 Vectorized multiplication of the fields of _data1_ and _data2_
 """
-*(data::Data, factor::Real) = Data(
+*(data::ScalarData, factor::Real)::ScalarData = ScalarData(
     name = data.name,
     time = data.time,
     grid = data.grid,
     field = data.field .* convert(Float32, factor)
 )
-*(data::VectorData, factor::Real) = VectorData(
+*(data::VectorData, factor::Real)::VectorData = VectorData(
     name = data.name,
     time = data.time,
     grid = data.grid,
@@ -102,13 +101,13 @@ Vectorized multiplication of the fields of _data1_ and _data2_
     yfield = data.yfield * convert(Float32, factor),
     zfield = data.zfield * convert(Float32, factor)
 )
-*(data::AveragesData, factor::Real) = AveragesData(
+*(data::AveragesData, factor::Real)::AveragesData = AveragesData(
     name = data.name,
     time = data.time,
     range = data.range,
     field = data.field .* convert(Float32, factor)
 )
-*(data1::Data, data2::Data) = Data(
+*(data1::ScalarData, data2::ScalarData)::ScalarData = ScalarData(
     name = "$(data1.name)*$(data2.name)",
     time = data1.time,
     grid = data1.grid,
@@ -120,10 +119,48 @@ Vectorized multiplication of the fields of _data1_ and _data2_
     range = data1.grid,
     field = data1.field .* data2.field
 )
-*(factor::Real, data::Data) = data*factor
-*(factor::Real, data::VectorData) = data*factor
-*(factor::Real, data::AveragesData) = data*factor
-# *(factor::Real, data::AbstractData) = data*factor
+*(factor::Real, data::AbstractData)::AbstractData = data*factor
+
+
+"""
+    data / number
+Divide the _field_ of _data_ with _number__.
+
+    data1 / data2
+Vectorized division of the fields of _data1_ and _data2_.
+"""
+/(data::ScalarData, factor::Real)::ScalarData = ScalarData(
+    name = data.name,
+    time = data.time,
+    grid = data.grid,
+    field = data.field ./ convert(Float32, factor)
+)
+/(data::VectorData, factor::Real)::VectorData = VectorData(
+    name = data.name,
+    time = data.time,
+    grid = data.grid,
+    xfield = data.xfield ./ convert(Float32, factor),
+    yfield = data.yfield ./ convert(Float32, factor),
+    zfield = data.zfield ./ convert(Float32, factor)
+)
+/(data::AveragesData, factor::Real)::AveragesData = AveragesData(
+    name = data.name,
+    time = data.time,
+    range = data.range,
+    field = data.field ./ convert(Float32, factor)
+)
+/(data1::ScalarData, data2::ScalarData)::ScalarData = ScalarData(
+    name = "$(data1.name)*$(data2.name)",
+    time = data1.time,
+    grid = data1.grid,
+    field = data1.field ./ data2.field
+)
+/(data1::AveragesData, data2::AveragesData) = AveragesData(
+    name = "$(data1.name)*$(data2.name)",
+    time = data1.time,
+    range = data1.grid,
+    field = data1.field ./ data2.field
+)
 
 
 """
@@ -131,7 +168,7 @@ Vectorized multiplication of the fields of _data1_ and _data2_
 Exponentiation of the _Data_ type. Returns _Data_  with data.field.^2 while 
 maintaining the metadata.
 """
-^(data::Data, exponent::Real)::Data = Data(
+^(data::ScalarData, exponent::Real)::ScalarData = ScalarData(
     name = data.name, 
     time = data.time, 
     grid = data.grid,
@@ -146,18 +183,18 @@ maintaining the metadata.
 
 
 """
-    abs(data) -> Data
+    abs(data)
 Returns absolute values of _data_ while preserving the metadata. 
 For _VectorData_ the euclidian norm is return.
 """
-abs(data::Data) = Data(
+abs(data::ScalarData) = ScalarData(
     field = abs.(data.field),
     grid = data.grid,
     name = "abs(" * data.name * ")",
     time = data.time
 )
 abs(data::VectorData) = norm(data)
-norm(data::VectorData)::Data = Data(
+norm(data::VectorData)::ScalarData = ScalarData(
     field = sqrt.(data.xfield.^2 .+ data.yfield.^2 .+ data.zfield.^2),
     grid = data.grid,
     name = "abs(" * data.name * ")",
@@ -170,13 +207,13 @@ norm(data::VectorData)::Data = Data(
 Returns the logarithm while preserving the metadata. Where the result is Inf 
     or -Inf the value is replaced by zero.
 """
-log(b::Base.Complex, data::Data) = Data(
+log(b::Base.Complex, data::ScalarData) = ScalarData(
     name = "log("*data.name*")",
     time = data.time,
     grid = data.grid,
     field = replace(log.(b, data.field), Inf=>0, -Inf=>0)
 )
-log(data::Data) = Data(
+log(data::ScalarData) = ScalarData(
     name = "log("*data.name*")",
     time = data.time,
     grid = data.grid,
@@ -201,7 +238,7 @@ function display(data::Grid)
     print("   y: "); println(typeof(data.y))
     print("   z: "); println(typeof(data.z))
 end
-function display(data::Data)
+function display(data::ScalarData)
     println(typeof(data), " with attributes: ")
     print("   name: "); println(data.name)
     print("   grid: "); println(typeof(data.grid))
@@ -237,7 +274,7 @@ Return the gradient of _data_ by using the packages _FiniteDifferences_  and
 _Iterpolations_.  
 _order_ determines the numerical error order for the derivatives.
 """
-# function gradient(data::Data; order::Int=4)::VectorData
+# function gradient(data::ScalarData; order::Int=4)::VectorData
 #     # TODO: 3D, faster?, parallise
 #     println("Calculating gradient with $(nthreads()) threads...")
 #     printstyled("    "*data.name*"\n", color=:cyan)
@@ -253,7 +290,7 @@ _order_ determines the numerical error order for the derivatives.
 # end
 
 
-function gradient_single_thread!(res::Array{Float32}, data::Data, itp, order::Int, ichunk::UnitRange)::Array{Float32}
+function gradient_single_thread!(res::Array{Float32}, data::ScalarData, itp, order::Int, ichunk::UnitRange)::Array{Float32}
     println("Process $(threadid()) in gradient_single_thread")
     k = 1
     if ichunk[1]==1
@@ -278,7 +315,7 @@ function gradient_single_thread!(res::Array{Float32}, data::Data, itp, order::In
 end
 
 
-function gradient(data::Data, order::Int)::VectorData
+function gradient(data::ScalarData, order::Int)::VectorData
     # TODO: 3D, faster?, parallise
     println("Calculating gradient with $(nthreads()) threads...")
     printstyled("    "*data.name*"\n", color=:cyan)
@@ -387,7 +424,7 @@ Compute the arithmetric mean along the second dimension while preserving metadat
     average(data; coord::Int=...) -> AveragesData
 Compute the arithmetric mean along the dimension given by `coord` as Int.
 """
-function average(data::Data; coord=3)::AveragesData
+function average(data::ScalarData; coord=3)::AveragesData
     if coord==1
         res = zeros(Float32, data.grid.nx)
         for i ∈ 1:data.grid.nx
@@ -416,7 +453,7 @@ function average(data::Data; coord=3)::AveragesData
 end
 
 
-function rms(data::Data; coord=3)::AveragesData
+function rms(data::ScalarData; coord=3)::AveragesData
     nv = size(data)[coord]
     nh = data.grid.nx*data.grid.ny*data.grid.nz / nv
     res = zeros(nv)
@@ -454,27 +491,27 @@ end
 # -------------------- Additional operations -----------------------------------
 # ------------------------------------------------------------------------------
 """
-    component(data, field) -> Data
+    component(data, field) -> ScalarData
 Extract from data of type _VectorData_ the component _field_ 
 while keeping the metadata.
 """
-function component(data::VectorData, field::Symbol)::Data 
+function component(data::VectorData, field::Symbol)::ScalarData 
     if field == :x
-        return Data(
+        return ScalarData(
             name = data.name * " - "*string(field),
             time = data.time,
             grid = data.grid,
             field = data.xfield
         )
     elseif field == :y
-        return Data(
+        return ScalarData(
             name = data.name * " - "*string(field),
             time = data.time,
             grid = data.grid,
             field = data.yfield
         )
     elseif field == :z
-        return Data(
+        return ScalarData(
             name = data.name * " - "*string(field),
             time = data.time,
             grid = data.grid,
@@ -487,11 +524,11 @@ end
 
 
 function crop(
-        data::Data; 
+        data::ScalarData; 
         xmin::Float64=data.grid.x[1], xmax::Float64=data.grid.x[end], 
         ymin::Float64=data.grid.y[1], ymax::Float64=data.grid.y[end],
         zmin::Float64=data.grid.z[1], zmax::Float64=data.grid.z[end]
-    )::Data
+    )::ScalarData
     println("Croping ...")
     printstyled("   "*data.name, "\n", color=:cyan)
     kmin::Int32=1; kmax::Int32=data.grid.nz
@@ -557,7 +594,7 @@ function crop(
             was_inrange = false
         end
     end
-    return Data(
+    return ScalarData(
         grid=Grid{Float64}(
             nx=Int32(imax+1-imin),
             ny=Int32(jmax+1-jmin),
@@ -592,13 +629,13 @@ end
 #     view(data, 1:50, 45:3, 4:5)
 # ```
 # """
-# view(data::Data, i::Int, j::Int, k::Int) = Data(
+# view(data::ScalarData, i::Int, j::Int, k::Int) = ScalarData(
 #     name = data.name,
 #     time = data.time,
 #     grid = data.grid,
 #     field = view(data.field, i, j, k)
 # )
-# view(data::Data, irange::UnitRange, jrange::UnitRange, krange::UnitRange) = Data(
+# view(data::ScalarData, irange::UnitRange, jrange::UnitRange, krange::UnitRange) = ScalarData(
 #     name = data.name,
 #     time = data.time,
 #     grid = Grid{typeof(data.grid.scalex)}(

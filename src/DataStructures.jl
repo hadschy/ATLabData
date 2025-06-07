@@ -1,5 +1,6 @@
 module DataStructures
 
+export AbstractData
 export Grid, Data, ScalarData, VectorData, AveragesData
 
 
