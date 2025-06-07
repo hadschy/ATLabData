@@ -107,23 +107,23 @@ function visualize(
             round((colorrange_max+colorrange_min)/2, digits=2), 
             round(colorrange_max, digits=2)
         ],
-        interactive=true
+        # interactive=true
     )::Tuple{Figure, Axis, Heatmap}
     println("Visualizing ...")
     printstyled("   $(data.name) \n", color=:cyan)
     sizez = round(Int32, data.grid.scalez/data.grid.scalex*sizex)    
-    if interactive
-        printstyled("   Backend: GLMakie \n", color=:gray, italic=true)
-        GLMakie.activate!()
-        fig = Figure(size=(sizex, sizez))
-        ax = Axis(
-            fig[1,1], 
-            xlabel=xlabel, ylabel=ylabel,
-            title=title,
-            backgroundcolor=:transparent
-        )
-    else
-        printstyled("   Backend: CairoMakie \n", color=:gray, italic=true)
+    # if interactive
+    #     printstyled("   Backend: GLMakie \n", color=:gray, italic=true)
+    #     GLMakie.activate!()
+    #     fig = Figure(size=(sizex, sizez))
+    #     ax = Axis(
+    #         fig[1,1], 
+    #         xlabel=xlabel, ylabel=ylabel,
+    #         title=title,
+    #         backgroundcolor=:transparent
+    #     )
+    # else
+        printstyled("   Backend: CairoMakie \n", color=:light_black)
         CairoMakie.activate!()
         fontsize = round(Int, fontsizescaling*fontsize)
         fig = Figure(
@@ -145,7 +145,7 @@ function visualize(
         )
         rowsize!(fig.layout, 1, Aspect(1, data.grid.nz/data.grid.nx))
         resize_to_layout!(fig)
-    end
+    # end
     hm = heatmap!(
         ax,
         view(data.grid.x ./ scaling, :), 
@@ -155,9 +155,9 @@ function visualize(
         colorrange=(colorrange_min, colorrange_max),
         colorscale=cscale
     )
-    if interactive
-        Colorbar(fig[1,2], hm, label="")
-    else
+    # if interactive
+    #     Colorbar(fig[1,2], hm, label="")
+    # else
         Colorbar(
             fig[1,2], 
             hm, 
@@ -167,7 +167,7 @@ function visualize(
             size = round(Int, sizex*12/2000),
             ticks=colorbarticks
         )
-    end
+    # end
     if critical_level > 0.0
         lines!(
             ax,
@@ -231,30 +231,34 @@ end
 function animate(
         dir::String, 
         field::String;
+        component::String="0",
         fps::Int=2,
         loader::Function=load,
         visualizer::Function=visualize,
-        live::Bool=true,
+        # live::Bool=false,
         outfile::String=joinpath(dir, "video/$(field).mp4"),
         slice::Int=1
     )
     println("Animating:")
     printstyled("   $(dir)", color=:cyan)
     filenames = filter(x -> startswith(x, field), readdir(dir, join=false))
+    if component != "0"
+        filenames = filter(x -> endswith(x, component), filenames)
+    end
     file = joinpath(dir, filenames[1])
     data = loader(file)
     fig, ax, hm = visualizer(data)
-    if live
-        # Live in GLWindow using GLMakie
-        display(fig)
-        for i ∈ eachindex(filenames)
-            file = joinpath(dir, filenames[i])
-            data = loader(file)
-            hm[3] = view(data.field, :, slice, :)
-            ax.title = "$(field) ; t = $(data.time)"
-            sleep(1/fps)
-        end
-    else
+    # if live
+    #     # Live in GLWindow using GLMakie
+    #     display(fig)
+    #     for i ∈ eachindex(filenames)
+    #         file = joinpath(dir, filenames[i])
+    #         data = loader(file)
+    #         hm[3] = view(data.field, :, slice, :)
+    #         ax.title = "$(field) ; t = $(data.time)"
+    #         sleep(1/fps)
+    #     end
+    # else
         # Save as .mp4 file with CairoMakie
         if ! ispath(dirname(outfile))
             mkpath(dirname(outfile))
@@ -265,5 +269,5 @@ function animate(
             hm[3] = view(data.field, :, slice, :)
             ax.title = "$(field) ; t = $(data.time)"
         end
-    end
+    # end
 end

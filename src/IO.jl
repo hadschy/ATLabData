@@ -175,7 +175,7 @@ function AveragesData_from_NetCDF(
     )::AveragesData
     verbose("AveragesData", file)
     t = ncread(file, "t")
-    range = ncread(file, "y")
+    range = ncread(file, "z")
     data = ncread(file, var)
     return AveragesData(name=var, time=t[1], field=data[:,1], range=range)
 end

@@ -3,7 +3,6 @@ function visualize(
         xlabel::String=data.name,
         ylabel::String="z",    
     )::Tuple{Figure, Axis, Lines}
-    GLMakie.activate!()
     fig = Figure(size=(1000, 1000))
     ax = Axis(
         fig[1,1],

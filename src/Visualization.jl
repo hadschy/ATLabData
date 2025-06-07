@@ -1,7 +1,8 @@
 module Visualization
 
 using CairoMakie
-using GLMakie
+# using GLMakie
+
 using LaTeXStrings
 using ..DataStructures: 
     Data, AveragesData
