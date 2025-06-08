@@ -5,7 +5,7 @@ module ATLabData
 
 include("DataStructures.jl")
 using .DataStructures
-    export Grid, Data, VectorData, AveragesData
+    export Grid, ScalarData, VectorData, AveragesData
 
 include("IO.jl")
 using .IO
@@ -13,8 +13,8 @@ using .IO
 
 include("DataOperations.jl")
 using .DataOperations
-    export size, display, +, -, *, ^, abs, log
-    export rescale, add, subtract, crop, gradient, norm, curl, logarithm
+    export size, display, +, -, *, ^, abs, log, convert, eltype
+    export crop, gradient, norm, curl, logarithm
     export component
     export rms, average
 
@@ -30,5 +30,11 @@ using .Visualization
 include("Physics.jl")
 using .Physics
     export vorticity, enstrophy, Ri
+
+
+function __init__()
+    # 
+end
+
 
 end

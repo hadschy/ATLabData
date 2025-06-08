@@ -34,7 +34,9 @@ load(dir::String, var::String, time::Real, avg::Bool) = load(avgfile_for_time(di
 """--------------------------------------------------------------------------"""
 
 
-""" Load the file _grid_ into composite type _Grid_"""
+""" 
+    Load the file _grid_ into composite type _Grid_
+"""
 function Grid_from_gridfile(gridfile::String)::Grid
     "f90_record_markers from the amount of write commands in storing routine "
     io = open(gridfile, "r")
@@ -65,42 +67,7 @@ function Grid_from_gridfile(gridfile::String)::Grid
     for i ∈ 1:nz
         z[i] = read(io, Float64)
     end
-    return Grid{Float64, Int32}(
-        nx=nx, ny=ny, nz=nz, 
-        lx=scalex, ly=scaley, lz=scalez, 
-        x=x, y=y, z=z
-    )
-end
-
-
-function Grid_from_gridfile(gridfile::String, inifile::String)::Grid
-    "f90_record_markers from the amount of write commands in storing routine"
-    f90_writes = 5
-    f90_record_markers = 2*f90_writes
-    nx = parse(Int32, search_inifile(inifile, "Grid", "Imax"))
-    ny = parse(Int32, search_inifile(inifile, "Grid", "Jmax"))
-    nz = parse(Int32, search_inifile(inifile, "Grid", "Kmax"))
-    vec = Vector{UInt}(undef, f90_record_markers+nx+ny+nz)
-    read!(gridfile, vec)
-    
-    marker1, nx = reinterpret(Tuple{Int32,Int32}, vec[1])
-    ny, nz = reinterpret(Tuple{Int32,Int32}, vec[2])
-    marker2, marker3 = reinterpret(Tuple{Int32,Int32}, vec[3])
-    scalex = reinterpret(Float64, vec[4])
-    scaley = reinterpret(Float64, vec[5])
-    scalez = reinterpret(Float64, vec[6])
-    marker4, marker5 = reinterpret(Tuple{Int32,Int32}, vec[7])
-    x = ltoh.(reinterpret(Float64, vec[8:8+nx-1]))
-    marker6, marker7 = reinterpret(Tuple{Int32,Int32}, vec[7+nx+1])
-    y = ltoh.(reinterpret(Float64, vec[7+nx+2:7+nx+2+ny-1]))
-    marker8, marker9 = reinterpret(Tuple{Int32,Int32}, vec[7+nx+2+ny])
-    z = reinterpret(Float64, vec[7+nx+2+ny+1:7+nx+2+ny+nz])
-    marker10, marker11 = reinterpret(Int32, vec[7+nx+2+ny+nz+1])
-    return Grid{Float64}(
-        nx=nx, ny=ny, nz=nz, 
-        lx=scalex, ly=scaley, lz=scalez, 
-        x=x, y=y
-    )
+    return Grid(nx, ny, nz, scalex, scaley, scalez, x, y, z)
 end
 
 
@@ -110,16 +77,36 @@ function Grid_from_file(dir::String)::Grid
 end
 
 
+"""
+    Loading data that is stored in a single file.
+"""
 function ScalarData_from_file(fieldfile::String)::ScalarData
-    verbose("ScalarData", fieldfile)
-    grid = Grid_from_file(dirname(fieldfile))
-    mat = Array_from_file(grid, fieldfile)
-    name = splitpath(fieldfile)[end]
-    time = time_from_file(fieldfile)
-    return ScalarData{Float64, Float32, Int32}(grid=grid, field=mat, name=name, time=time)
+    if startswith(fieldfile, "flow.")
+        return ScalarData_from_raw(fieldfile)
+    else
+        return ScalarData_from_visuals(fieldfile)
+    end
 end
 
 
+function ScalarData_from_raw(fieldfile::String)#::ScalarData{Float64,Int32}
+    error("Loading raw ATLab data not yet supported.")
+end
+
+
+function ScalarData_from_visuals(fieldfile::String)::ScalarData{Float32,Int32}
+    verbose("ScalarData", fieldfile)
+    grid = convert(Float32, Grid_from_file(dirname(fieldfile)))
+    mat = Array_from_file(grid, fieldfile)
+    name = splitpath(fieldfile)[end]
+    time = time_from_file(fieldfile)
+    return ScalarData(name, grid, time, mat)
+end
+
+
+"""
+    Loading data from three files. Not check for physical consistency provided.
+"""
 function VectorData_from_files(
         xfieldfile::String,
         yfieldfile::String,
@@ -127,7 +114,7 @@ function VectorData_from_files(
     )
     verbose("VectorData", xfieldfile, yfieldfile, zfieldfile)
     grid = Grid_from_file(dirname(xfieldfile))
-    return VectorData{Float32, Int32}(
+    return VectorData(
         name = string(splitpath(xfieldfile)[end][1:end-2]),
         grid = grid,
         time = time_from_file(xfieldfile),
@@ -138,6 +125,9 @@ function VectorData_from_files(
 end
 
 
+"""
+    Load array from a binary file according to the information in _grid_.
+"""
 function Array_from_file(grid::Grid, fieldfile::String)::Array{Float32, 3}
     buffer = Vector{Float32}(undef, grid.nx*grid.ny*grid.nz)
     read!(fieldfile, buffer)

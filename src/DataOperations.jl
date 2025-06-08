@@ -1,6 +1,6 @@
 module DataOperations
 
-import Base: +, -, *, ^, size, display, abs
+import Base: +, -, *, /, ^, size, display, abs, convert, deepcopy, eltype
 
 using Base.Threads
 using Interpolations: interpolate, Gridded, Linear
@@ -8,8 +8,8 @@ using FiniteDifferences: central_fdm, grad
 
 using ..DataStructures
 
-export size, display, +, -, *, abs, log, view
-export rescale, add, subtract, crop, gradient, norm, curl, logarithm
+export size, display, +, -, *, /, ^, abs, log, view, convert, eltype
+export crop, gradient, norm, curl, logarithm
 export component
 export rms, average
 
@@ -116,7 +116,7 @@ Vectorized multiplication of the fields of _data1_ and _data2_
 *(data1::AveragesData, data2::AveragesData) = AveragesData(
     name = "$(data1.name)*$(data2.name)",
     time = data1.time,
-    range = data1.grid,
+    range = data1.range,
     field = data1.field .* data2.field
 )
 *(factor::Real, data::AbstractData)::AbstractData = data*factor
@@ -211,14 +211,42 @@ log(b::Base.Complex, data::ScalarData) = ScalarData(
     name = "log("*data.name*")",
     time = data.time,
     grid = data.grid,
-    field = replace(log.(b, data.field), Inf=>0, -Inf=>0)
+    field = replace(log.(b, data.field), Inf=>0.0, -Inf=>0.0)
 )
 log(data::ScalarData) = ScalarData(
     name = "log("*data.name*")",
     time = data.time,
     grid = data.grid,
-    field = replace(log.(data.field), Inf=>0, -Inf=>0)
+    field = replace(log.(data.field), Inf=>0.0, -Inf=>0.0)
 )
+
+
+"""
+    convert(T, data)
+Convert the entries in data to T.
+"""
+convert(T::Type{<:AbstractFloat}, grid::Grid)::Grid{T,Int32} = Grid{T,Int32}(
+    grid.nx, grid.ny, grid.nz, 
+    grid.scalex, grid.scaley, grid.scalez, 
+    grid.x, grid.y, grid.z
+)
+convert(T::Type{<:AbstractFloat}, data::ScalarData)::ScalarData{T,Int32} = ScalarData{T,Int32}(
+    data.name, convert(T, data.grid), data.time, data.field
+)
+
+
+"""
+    eltype(data)
+"""
+eltype(grid::Grid)::Tuple = (eltype(grid.x), eltype(grid.nx))
+eltype(data::ScalarData)::Tuple = eltype(data.grid)
+
+
+# """
+#     deepcopy(data, newdata)
+# Copy _data_ into _newdata_.
+# """
+# # deepcopy(a::ScalarData, b::ScalarData) = 
 
 
 
@@ -244,7 +272,7 @@ function display(data::ScalarData)
     print("   grid: "); println(typeof(data.grid))
     print("   field: "); println(typeof(data.field))
     print("   time: "); println(data.time)
-    println("Use display(data.grid) and display(data.field) to print the corresponding attributes")
+    println("   Use display(data.grid) and display(data.field) to print the corresponding attributes")
 end
 function display(data::VectorData)
     println(typeof(data), " with attributes: ")
@@ -254,7 +282,7 @@ function display(data::VectorData)
     print("   yfield: "); println(typeof(data.yfield))
     print("   zfield: "); println(typeof(data.zfield))
     print("   time: "); println(data.time)
-    println("Use display(data.grid) and display(data.*field) to print the corresponding attributes")
+    println("   Use display(data.grid) and display(data.*field) to print the corresponding attributes")
 end
 function display(data::AveragesData)
     println(typeof(data), " with attributes: ")
@@ -525,15 +553,15 @@ end
 
 function crop(
         data::ScalarData; 
-        xmin::Float64=data.grid.x[1], xmax::Float64=data.grid.x[end], 
-        ymin::Float64=data.grid.y[1], ymax::Float64=data.grid.y[end],
-        zmin::Float64=data.grid.z[1], zmax::Float64=data.grid.z[end]
+        xmin = data.grid.x[1], xmax = data.grid.x[end], 
+        ymin = data.grid.y[1], ymax = data.grid.y[end],
+        zmin = data.grid.z[1], zmax = data.grid.z[end]
     )::ScalarData
     println("Croping ...")
     printstyled("   "*data.name, "\n", color=:cyan)
-    kmin::Int32=1; kmax::Int32=data.grid.nz
-    jmin::Int32=1; jmax::Int32=data.grid.ny
-    imin::Int32=1; imax::Int32=data.grid.nx
+    kmin::Int=1; kmax::Int=data.grid.nz
+    jmin::Int=1; jmax::Int=data.grid.ny
+    imin::Int=1; imax::Int=data.grid.nx
     inrange = false; was_inrange = false
     for k in eachindex(data.field[1,1,:])
         z = data.grid.z[k]
@@ -594,21 +622,21 @@ function crop(
             was_inrange = false
         end
     end
-    return ScalarData(
-        grid=Grid{Float64}(
-            nx=Int32(imax+1-imin),
-            ny=Int32(jmax+1-jmin),
-            nz=Int32(kmax+1-kmin),
-            lx=xmax-xmin,
-            ly=ymax-ymin,
-            lz=zmax-zmin,
-            x=data.grid.x[imin:imax],
-            y=data.grid.y[jmin:jmax],
-            z=data.grid.z[kmin:kmax]
+    return ScalarData{eltype(data)[1], eltype(data)[2]}(
+        data.name*"-crop",
+        Grid{eltype(data)[1], eltype(data)[2]}(
+            imax + 1 - imin,
+            jmax + 1 - jmin,
+            kmax + 1 - kmin,
+            xmax - xmin,
+            ymax - ymin,
+            zmax - zmin,
+            data.grid.x[imin:imax],
+            data.grid.y[jmin:jmax],
+            data.grid.z[kmin:kmax]
         ), 
-        field=data.field[imin:imax,jmin:jmax,kmin:kmax],
-        name=data.name*"-crop",
-        time=data.time
+        data.time,
+        data.field[imin:imax,jmin:jmax,kmin:kmax],
     )
 end
 

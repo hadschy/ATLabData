@@ -2,7 +2,7 @@
 
 
 function save_for_LaTeX(
-        data::Data, 
+        data::ScalarData, 
         outdir::String; 
         slice::Int=1,
         sizey::Int=1000
@@ -85,7 +85,7 @@ utilizing metadata of the _Data_ type. The returned axis contains a heatmap
 of _data.field[:,:,slice]_.
 """
 function visualize(
-        data::Data;
+        data::ScalarData;
         slice::Int=1, 
         sizex::Int=2000,
         colormap=:RdGy,
@@ -221,7 +221,7 @@ function add_BgPlot!(
 end
 
 
-function display_visualize(data::Data; slice::Int=1)
+function display_visualize(data::ScalarData; slice::Int=1)
     set_theme!(merge(theme_dark(), theme_latexfonts()))
     fig, ax, hm = visualize(data, slice=slice)
     display(fig)

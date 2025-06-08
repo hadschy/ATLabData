@@ -5,7 +5,7 @@ using CairoMakie
 
 using LaTeXStrings
 using ..DataStructures: 
-    Data, AveragesData
+    ScalarData, AveragesData
 using ..IO: load
 
 include("Visualization/Data2DVisualization.jl")
