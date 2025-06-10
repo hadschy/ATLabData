@@ -22,7 +22,7 @@ include("Visualization.jl")
 using .Visualization
     export visualize
     export animate
-    export display_visualize
+    export heatmap, lines
     export save_for_LaTeX
     export save_visualize
     export add_BgPlot!

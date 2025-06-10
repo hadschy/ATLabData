@@ -1,8 +1,8 @@
 module Visualization
 
-using CairoMakie
-# using GLMakie
+import CairoMakie: heatmap, lines
 
+using CairoMakie
 using LaTeXStrings
 using ..DataStructures: 
     ScalarData, AveragesData
@@ -12,10 +12,8 @@ include("Visualization/Data2DVisualization.jl")
 include("Visualization/AverageDataVisualization.jl")
 
 export visualize
+export heatmap, lines
 export animate
-export display_visualize
-export save_visualize
-export save_for_LaTeX
 export add_BgPlot!
 
 end

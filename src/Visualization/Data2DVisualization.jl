@@ -1,71 +1,71 @@
 # TODO: proper resolution scaling
 
 
-function save_for_LaTeX(
-        data::ScalarData, 
-        outdir::String; 
-        slice::Int=1,
-        sizey::Int=1000
-    )
+# function save_for_LaTeX(
+#         data::ScalarData, 
+#         outdir::String; 
+#         slice::Int=1,
+#         sizey::Int=1000
+#     )
     
-    # sizez = round(Int32, data.grid.nx/data.grid.nz*sizezx
+#     # sizez = round(Int32, data.grid.nx/data.grid.nz*sizezx
 
-    set_theme!(theme_latexfonts())
-    fig = Figure(
-    size=(sizex, sizez),
-    figure_padding=0., 
-    # backgroundcolor=:transparent
-    )
-    ax = Axis(
-        fig[1,1], 
-        xlabelsize=30, ylabelsize=30,
-        xticklabelsize=25, yticklabelsize=25,
-        xlabel=L"x", ylabel=L"z",
-        # title=L"u_y",
-        titlesize=40
-    )
-    # Note: PGFplots only knows few colormaps, therefore using viridis here
-    heatmap!(
-        ax,
-        data.grid.x,
-        data.grid.z,
-        data.field[:,slice,:], 
-        colormap=:viridis
-    )
-    hidedecorations!(ax)
-    outfile = joinpath(outdir, data.name*"-pgfplots.png")
-    save(outfile, fig)
+#     set_theme!(theme_latexfonts())
+#     fig = Figure(
+#     size=(sizex, sizez),
+#     figure_padding=0., 
+#     # backgroundcolor=:transparent
+#     )
+#     ax = Axis(
+#         fig[1,1], 
+#         xlabelsize=30, ylabelsize=30,
+#         xticklabelsize=25, yticklabelsize=25,
+#         xlabel=L"x", ylabel=L"z",
+#         # title=L"u_y",
+#         titlesize=40
+#     )
+#     # Note: PGFplots only knows few colormaps, therefore using viridis here
+#     heatmap!(
+#         ax,
+#         data.grid.x,
+#         data.grid.z,
+#         data.field[:,slice,:], 
+#         colormap=:viridis
+#     )
+#     hidedecorations!(ax)
+#     outfile = joinpath(outdir, data.name*"-pgfplots.png")
+#     save(outfile, fig)
 
-    # Save time information
-    t = data.time
-    println(t)
-    filename = data.name*".time"
-    outfile = joinpath(outdir, filename)
-    println("Storing physical time:    ", outfile)
-    f = open(outfile, "w")
-    write(f, string(t)*"\n")
-    close(f)
+#     # Save time information
+#     t = data.time
+#     println(t)
+#     filename = data.name*".time"
+#     outfile = joinpath(outdir, filename)
+#     println("Storing physical time:    ", outfile)
+#     f = open(outfile, "w")
+#     write(f, string(t)*"\n")
+#     close(f)
 
-    # Save data range (e.g. for colorbar)
-    filename = data.name * ".range"
-    outfile = joinpath(outdir, filename)
-    println("Storing data range:    ", outfile)
-    f = open(outfile, "w")
-    write(f, string(maximum(data.field)) * "\n")
-    write(f, string(minimum(data.field)) * "\n")
-    close(f)
-end
+#     # Save data range (e.g. for colorbar)
+#     filename = data.name * ".range"
+#     outfile = joinpath(outdir, filename)
+#     println("Storing data range:    ", outfile)
+#     f = open(outfile, "w")
+#     write(f, string(maximum(data.field)) * "\n")
+#     write(f, string(minimum(data.field)) * "\n")
+#     close(f)
+# end
 
 
-function save_for_LaTeX(fig::Figure, outfile::String)
-    fig.figure_padding = 0
-    hidedecorations!(ax)
-    save(fig, outfile)
-end
+# function save_for_LaTeX(fig::Figure, outfile::String)
+#     fig.figure_padding = 0
+#     hidedecorations!(ax)
+#     save(fig, outfile)
+# end
 
 
 """
-    visualize(
+    heatmap(
         data; 
         slice=1, 
         sizex=1000, 
@@ -79,12 +79,12 @@ end
         xtickstep=10, ytickstep=20,
         scaling=1.0, cscale=identity,
         title=data.name*"  ;  t = "*string(data.time)
-    ) -> Figure, Axis
+    ) -> Figure, Axis, Heatmap
 Main visualization routine, that generates and returns the figure and axis by 
 utilizing metadata of the _Data_ type. The returned axis contains a heatmap 
 of _data.field[:,:,slice]_.
 """
-function visualize(
+function heatmap(
         data::ScalarData;
         slice::Int=1, 
         sizex::Int=2000,
@@ -187,7 +187,7 @@ end
         xmin=minimum(data.field),
         mxmax=maximum(data.field)
     ) -> Figure
-Adds a line plot of data to fig[1,2]. Intented to be used with ```visualize````
+Adds a line plot of data to fig[1,2]. Intented to be used with ```heatmap````
 """
 function add_BgPlot!(
         fig::Figure, 
@@ -221,9 +221,9 @@ function add_BgPlot!(
 end
 
 
-function display_visualize(data::ScalarData; slice::Int=1)
+function visualize(data::ScalarData; slice::Int=1)
     set_theme!(merge(theme_dark(), theme_latexfonts()))
-    fig, ax, hm = visualize(data, slice=slice)
+    fig, ax, hm = heatmap(data, slice=slice)
     display(fig)
 end
 
@@ -234,7 +234,7 @@ function animate(
         component::String="0",
         fps::Int=2,
         loader::Function=load,
-        visualizer::Function=visualize,
+        visualizer::Function=heatmap,
         # live::Bool=false,
         outfile::String=joinpath(dir, "video/$(field).mp4"),
         slice::Int=1

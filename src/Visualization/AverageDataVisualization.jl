@@ -1,4 +1,4 @@
-function visualize(
+function lines(
         data::AveragesData;
         xlabel::String=data.name,
         ylabel::String="z",    
@@ -16,17 +16,17 @@ function visualize(
         xticklabelsize = 40, yticklabelsize = 40, 
         xlabelpadding = 10, ylabelpadding = 10
     )
-    ln = lines!(ax, data.field, data.range, label="t = "*string(data.time))
+    ln = lines!(ax, view(data.field, :), view(data.grid.z, :), label="t = "*string(data.time))
     axislegend(ax)
     return fig, ax, ln
 end
 
 
-function display_visualize(
+function visualize(
         data::AveragesData; 
         xlabel = "$(data.name)",
         ylabel = "z",
     )
-    fig, ax, ln = visualize(data; xlabel=xlabel, ylabel=ylabel)
+    fig, ax, ln = lines(data; xlabel=xlabel, ylabel=ylabel)
     display(fig)
 end

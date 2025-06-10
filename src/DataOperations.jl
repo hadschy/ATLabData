@@ -453,65 +453,68 @@ Compute the arithmetric mean along the second dimension while preserving metadat
 Compute the arithmetric mean along the dimension given by `coord` as Int.
 """
 function average(data::ScalarData; coord=3)::AveragesData
+    println("Computing averages along coord=$coord ...")
+    printstyled("   $(data.name)  \n")
     if coord==1
-        res = zeros(Float32, data.grid.nx)
+        res = zeros(eltype(data)[1], data.grid.nx)
         for i ∈ 1:data.grid.nx
-            res[i] = sum(data.field[i,:,:]) / (data.grid.ny*data.grid.nz)
+            res[i] = sum(view(data.field, i, :, :)) / (data.grid.ny*data.grid.nz)
         end
         range = data.grid.x
-        name = "avg1(" * data.name * ")"
     elseif coord==2
-        res = zeros(Float32, data.grid.ny)
+        res = zeros(eltype(data)[1], data.grid.ny)
         for j ∈ 1:data.grid.ny
-            res[j] = sum(data.field[:,j,:]) / (data.grid.nx*data.grid.nz)
+            res[j] = sum(view(data.field, :, j, :)) / (data.grid.nx*data.grid.nz)
         end
-        range = convert(Vector{Float32}, data.grid.y)
-        name = "avg2(" * data.name * ")"
+        # range = convert(Vector{Float32}, data.grid.y)
+        range = data.grid.y
     elseif coord==3
-        res = zeros(Float32, data.grid.nz)
+        res = zeros(eltype(data)[1], data.grid.nz)
         for k ∈ 1:data.grid.nz
-            res[k] = sum(data.field[:,:,k]) / (data.grid.nx*data.grid.ny)
+            res[k] = sum(view(data.field, :, :, k)) / (data.grid.nx*data.grid.ny)
         end
-        range = convert(Vector{Float32}, data.grid.z)
-        name = "avg3(" * data.name * ")"
+        # range = convert(Vector{Float32}, data.grid.z)
+        range = data.grid.z
     else
         error("coord has be in {1,2,3}")
     end
+    name = "avg$coord($(data.name))"
     return AveragesData(name=name, time=data.time, range=range, field=res)
 end
 
 
 function rms(data::ScalarData; coord=3)::AveragesData
+    println("Computing rms along coord=$coord ...")
+    printstyled("   $(data.name) \n")
     nv = size(data)[coord]
     nh = data.grid.nx*data.grid.ny*data.grid.nz / nv
-    res = zeros(nv)
+    res = zeros(eltype(data)[1], nv)
     if coord==1
         for i ∈ 1:nv
             s = sum(view(data.field, i, :, :).^2)
             res[i] = sqrt(s/nh)
         end
-        range = convert(Vector{Float32}, data.grid.x)
+        # range = convert(Vector{Float32}, data.grid.x)
+        res = data.grid.x
     elseif coord==2
         for i ∈ 1:nv
             s = sum(view(data.field, :, i, :).^2)
             res[i] = sqrt(s/nh)
         end
-        range = convert(Vector{Float32}, data.grid.y)
+        # range = convert(Vector{Float32}, data.grid.y)
+        range = data.grid.y
     elseif coord==3
         for i ∈ 1:nv
             s = sum(view(data.field, :, :, i).^2)
             res[i] = sqrt(s/nh)
         end
-        range = convert(Vector{Float32}, data.grid.z)
+        # range = convert(Vector{Float32}, data.grid.z)
+        range = data.grid.z
      else
         error("Give coord as Int in {1,2,3}.")
     end
-    return AveragesData(
-        name = "rms$(coord)($(data.name))", 
-        time = data.time,
-        range = range,
-        field = convert(Vector{Float32}, res)
-    )
+    name = "rms$(coord)($(data.name))"
+    return AveragesData(name=name, time=data.time, range=range, field=res)
 end
 
 
