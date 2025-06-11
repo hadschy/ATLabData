@@ -113,9 +113,31 @@ function VectorData_from_files(
         xfieldfile::String,
         yfieldfile::String,
         zfieldfile::String
+    )::VectorData
+    if startswith(xfieldfile, "flow.")
+        return VectorData_from_raw(xfieldfile, yfieldfile, zfieldfile)
+    else
+        return VectorData_from_visuals(yfieldfile, yfieldfile, zfieldfile)
+    end
+end
+
+
+function VectorData_from_raw(
+        xfieldfile::String,
+        yfieldfile::String,
+        zfieldfile::String
+    )#::VectorData
+    error("LOading from raw ATLab data not yet implemented.")
+end
+
+
+function VectorData_from_visuals(
+        xfieldfile::String,
+        yfieldfile::String,
+        zfieldfile::String
     )
     verbose("VectorData", xfieldfile, yfieldfile, zfieldfile)
-    grid = Grid_from_file(dirname(xfieldfile))
+    grid = convert(Float32, Grid_from_file(dirname(xfieldfile)))
     return VectorData(
         name = string(splitpath(xfieldfile)[end][1:end-2]),
         grid = grid,
@@ -130,8 +152,11 @@ end
 """
     Load array from a binary file according to the information in _grid_.
 """
-function Array_from_file(grid::Grid, fieldfile::String)::Array{Float32, 3}
-    buffer = Vector{Float32}(undef, grid.nx*grid.ny*grid.nz)
+function Array_from_file(
+        grid::Grid{T,I}, 
+        fieldfile::String
+    )::Array{T,3} where {T<:AbstractFloat, I<:Signed}
+    buffer = Vector{T}(undef, grid.nx*grid.ny*grid.nz)
     read!(fieldfile, buffer)
     return reshape(buffer, (grid.nx, grid.ny, grid.nz))
 end
