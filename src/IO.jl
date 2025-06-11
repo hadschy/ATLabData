@@ -97,10 +97,12 @@ end
 function ScalarData_from_visuals(fieldfile::String)::ScalarData{Float32,Int32}
     verbose("ScalarData", fieldfile)
     grid = convert(Float32, Grid_from_file(dirname(fieldfile)))
-    mat = Array_from_file(grid, fieldfile)
-    name = splitpath(fieldfile)[end]
-    time = time_from_file(fieldfile)
-    return ScalarData(name, grid, time, mat)
+    return ScalarData(
+        name = splitpath(fieldfile)[end],
+        grid = grid,
+        time = time_from_file(fieldfile),
+        field = Array_from_file(grid, fieldfile)
+    )
 end
 
 

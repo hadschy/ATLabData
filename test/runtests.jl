@@ -13,8 +13,8 @@ using Test
         zmax = data.grid.z[round(Int, data.grid.nz*3/4)],
     )
     
-    @time avg = average(data)
     @time avg = rms(data)
+    @time avg = average(data)
     @time fig, ax, hm = heatmap(data)
     @time data = load("/home/thomas/simulations/test.atlab/avg14200.nc", "rU")
     @time fig, ax, ln = lines(data)

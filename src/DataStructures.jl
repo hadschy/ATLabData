@@ -40,8 +40,8 @@ struct ScalarData{T,I} <: AbstractData{T,I}
     field::Array{T,3}
 end
 ScalarData(;
-        name::String, grid::Grid, time::AbstractFloat, field::Array{<:AbstractFloat, 3}
-    ) = ScalarData(name, grid, time, field)
+    name::String, grid::Grid, time::AbstractFloat, field::Array{<:AbstractFloat, 3}
+) = ScalarData(name, grid, time, field)
 
 
 struct VectorData{T,I} <: AbstractData{T,I}
@@ -53,11 +53,11 @@ struct VectorData{T,I} <: AbstractData{T,I}
     zfield::Array{T,3}
 end
 VectorData(;
-        name::String, grid::Grid, time::AbstractFloat, 
-        xfield::Array{<:AbstractFloat,3}, 
-        yfield::Array{<:AbstractFloat,3}, 
-        zfield::Array{<:AbstractFloat,3},
-    ) = VectorData(name, grid, time, xfield, yfield, zfield)
+    name::String, grid::Grid, time::AbstractFloat, 
+    xfield::Array{<:AbstractFloat,3}, 
+    yfield::Array{<:AbstractFloat,3}, 
+    zfield::Array{<:AbstractFloat,3},
+) = VectorData(name, grid, time, xfield, yfield, zfield)
 
 
 struct AveragesData{T,I} <: AbstractData{T,I}
