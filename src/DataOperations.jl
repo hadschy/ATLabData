@@ -287,7 +287,7 @@ end
 function display(data::AveragesData)
     println(typeof(data), " with attributes: ")
     print("   name: "); println(data.name)
-    print("   range: "); println(typeof(data.range))
+    print("   range: "); println(typeof(data.grid.z))
     print("   field: "); println(typeof(data.field))
     print("   time: "); println(data.time)
 end
@@ -391,47 +391,47 @@ function curl(data::VectorData; order::Int=4)::VectorData
     zres = zeros(Float32, (data.grid.nx, data.grid.ny, data.grid.nz))
     
     if data.grid.nz > 1
-        kmin = round(Int, order/2+1); kmax = round(Int, data.grid.nz-order/2-1)
+        kmin = order÷2 + 1; kmax = data.grid.nz - order - 1
     else
         kmin = 1; kmax = data.grid.nz
     end
     if data.grid.ny > 1
-        jmin = round(Int, order/2+1); jmax = round(Int, data.grid.ny-order/2-1)
+        jmin = order÷2 + 1; jmax = data.grid.ny - order - 1
     else
         jmin = 1; jmax = data.grid.ny
     end
     if data.grid.nx > 1
-        imin = round(Int, order/2+1); imax = round(Int, data.grid.nx-order/2-1)
+        imin = order÷2 + 1; imax = data.grid.nx - order - 1
     else
         imin = 1; imax = data.grid.nx
     end
 
-    """ Not the real curl: computes curl for each z-slice ... TODO """
-    for k ∈ kmin:kmax
+    """ Not the real curl: computes curl for each y-slice (2D) ... TODO """
+    for j ∈ jmin:jmax
         xitp = interpolate(
-            (data.grid.x, data.grid.y), # Nodes of the grid
-            data.xfield[:,:,k], # Field to be interpolated
+            (data.grid.x, data.grid.z), # Nodes of the grid
+            data.xfield[:,j,:], # Field to be interpolated
             Gridded(Linear())
         )
-        yitp = interpolate(
-            (data.grid.x, data.grid.y), # Nodes of the grid
-            data.yfield[:,:,k], # Field to be interpolated
-            Gridded(Linear())
-        )
-        # zitp = interpolate(
+        # yitp = interpolate(
         #     (data.grid.x, data.grid.y), # Nodes of the grid
-        #     data.zfield[:,:,k], # Field to be interpolated
+        #     data.yfield[:,:,k], # Field to be interpolated
         #     Gridded(Linear())
         # )
-        for j ∈ jmin:jmax
+        zitp = interpolate(
+            (data.grid.x, data.grid.z), # Nodes of the grid
+            data.zfield[:,j,:], # Field to be interpolated
+            Gridded(Linear())
+        )
+        for k ∈ kmin:kmax
             for i ∈ imin:imax
-                xgrad = grad(central_fdm(order, 1), xitp, data.grid.x[i], data.grid.y[j])
-                ygrad = grad(central_fdm(order, 1), yitp, data.grid.x[i], data.grid.y[j])
-                # zgrad = grad(central_fdm(order, 1), zitp, data.grid.x[i], data.grid.y[j])
+                xgrad = grad(central_fdm(order, 1), xitp, data.grid.x[i], data.grid.z[k])
+                # ygrad = grad(central_fdm(order, 1), yitp, data.grid.x[i], data.grid.z[k])
+                zgrad = grad(central_fdm(order, 1), zitp, data.grid.x[i], data.grid.z[k])
 
                 # xres[i,j,k] = zgrad[2] - ygrad[3]
-                # yres[i,j,k] = xgrad[3] - zgrad[1]
-                zres[i,j,k] = ygrad[1] - xgrad[2]
+                yres[i,j,k] = xgrad[3] - zgrad[1]
+                # zres[i,j,k] = ygrad[1] - xgrad[2]
             end
         end
     end
@@ -641,44 +641,15 @@ function crop(
 end
 
 
-#-------------------------------------------------------------------------------
-#                           Under Construction
-#-------------------------------------------------------------------------------
-# TODO See DataStructures.jl
-
-# """
-#     view(data, i, j, k)
-# Method for the _Base_ function ```view``` for the _Data_ type. 
-# _i, j, k_ can be either particular indices or ranges.
-
-# _Examples_:
-# ```
-#     view(data, 2, 934, 1)
-#     view(data, 1:50, 45:3, 4:5)
-# ```
-# """
-# view(data::ScalarData, i::Int, j::Int, k::Int) = ScalarData(
-#     name = data.name,
-#     time = data.time,
-#     grid = data.grid,
-#     field = view(data.field, i, j, k)
-# )
-# view(data::ScalarData, irange::UnitRange, jrange::UnitRange, krange::UnitRange) = ScalarData(
-#     name = data.name,
-#     time = data.time,
-#     grid = Grid{typeof(data.grid.scalex)}(
-#         nx = irange[end]-irange[1],
-#         ny = jrange[end]-jrange[1],
-#         nz = krange[end]-krange[1],
-#         x = data.grid.x[irange],
-#         y = data.grid.y[jrange],
-#         z = data.grid.z[krange],
-#         lx = data.grid.x[irange[2]] - data.grid.x[irange[1]],
-#         ly = data.grid.y[jrange[2]] - data.grid.x[jrange[1]],
-#         lz = data.grid.z[krange[2]] - data.grid.x[krange[1]]
-#     ),
-#     field = view(data.field, irange, jrange, krange)
-# )
+# function smooth(data::AveragesData, block::Int)::AveragesData
+#     res = data.field
+#     kmin = block÷2
+#     kmax = data.grid.nz - block÷2
+#     for k ∈ kmin:kmax
+#         res[k] = sum(data.field[k-block÷2:k+block÷2])/block
+#     end
+#     return AveragesData("smooth($(data.name))", data.time, data.grid, res)
+# end
 
 
 end

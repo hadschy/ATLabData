@@ -86,23 +86,23 @@ of _data.field[:,:,slice]_.
 """
 function heatmap(
         data::ScalarData;
-        slice::Int=1, 
-        sizex::Int=2000,
+        slice::Int = 1, 
+        sizex::Int = 2000,
         colormap=:RdGy,
-        colorrange_max::Float32=maximum(data.field),
-        colorrange_min::Float32=minimum(data.field),
+        colorrange_max = maximum(data.field),
+        colorrange_min = minimum(data.field),
         label=" ",
         fontsize::Int=round(Int, sizex*40/2000),
         fontsizescaling=1,
-        critical_level::Float64=-1.0,
-        xlabel=L"x",
-        ylabel=L"z",
-        xtickstep=10, #round(data.grid.scalex/8),
-        ytickstep=10, #round(data.grid.scaley/4),
-        scaling::Float64=1.0,
-        cscale=identity,
-        title::String=data.name*"  ;  t = "*string(data.time),
-        colorbarticks::Vector{Float32}=[
+        critical_level::Float64 = -1.0,
+        xlabel = L"x",
+        ylabel = L"z",
+        xtickstep = 10, #round(data.grid.scalex/8),
+        ytickstep = 10, #round(data.grid.scaley/4),
+        scaling = 1.0,
+        cscale = identity,
+        title::String = data.name*"  ;  t = "*string(data.time),
+        colorbarticks = [
             round(colorrange_min, digits=2), 
             round((colorrange_max+colorrange_min)/2, digits=2), 
             round(colorrange_max, digits=2)
@@ -112,40 +112,28 @@ function heatmap(
     println("Visualizing ...")
     printstyled("   $(data.name) \n", color=:cyan)
     sizez = round(Int32, data.grid.scalez/data.grid.scalex*sizex)    
-    # if interactive
-    #     printstyled("   Backend: GLMakie \n", color=:gray, italic=true)
-    #     GLMakie.activate!()
-    #     fig = Figure(size=(sizex, sizez))
-    #     ax = Axis(
-    #         fig[1,1], 
-    #         xlabel=xlabel, ylabel=ylabel,
-    #         title=title,
-    #         backgroundcolor=:transparent
-    #     )
-    # else
-        printstyled("   Backend: CairoMakie \n", color=:light_black)
-        CairoMakie.activate!()
-        fontsize = round(Int, fontsizescaling*fontsize)
-        fig = Figure(
-            size=(sizex, sizez),
-            px_per_iunit=10,
-            # backgroundcolor=:transparent,
-            figure_padding=round(Int, 10/2000*sizex)
-        )
-        ax = Axis(
-            fig[1,1], 
-            xlabel=xlabel, ylabel=ylabel,
-            xlabelsize=fontsize, ylabelsize=fontsize,
-            xticklabelsize=fontsize, yticklabelsize=fontsize,
-            xticks=data.grid.x[1]:xtickstep:data.grid.x[end],
-            yticks=round(data.grid.z[1]):ytickstep:round(data.grid.z[end]),
-            title=title,
-            titlesize=fontsize/2,
-            backgroundcolor=:transparent
-        )
-        rowsize!(fig.layout, 1, Aspect(1, data.grid.nz/data.grid.nx))
-        resize_to_layout!(fig)
-    # end
+    printstyled("   Backend: CairoMakie \n", color=:light_black)
+    CairoMakie.activate!()
+    fontsize = round(Int, fontsizescaling*fontsize)
+    fig = Figure(
+        size=(sizex, sizez),
+        px_per_iunit=10,
+        # backgroundcolor=:transparent,
+        figure_padding=round(Int, 10/2000*sizex)
+    )
+    ax = Axis(
+        fig[1,1], 
+        xlabel=xlabel, ylabel=ylabel,
+        xlabelsize=fontsize, ylabelsize=fontsize,
+        xticklabelsize=fontsize, yticklabelsize=fontsize,
+        xticks=data.grid.x[1]:xtickstep:data.grid.x[end],
+        yticks=round(data.grid.z[1]):ytickstep:round(data.grid.z[end]),
+        title=title,
+        titlesize=fontsize/2,
+        backgroundcolor=:transparent
+    )
+    rowsize!(fig.layout, 1, Aspect(1, data.grid.nz/data.grid.nx))
+    resize_to_layout!(fig)
     hm = heatmap!(
         ax,
         view(data.grid.x ./ scaling, :), 
@@ -155,19 +143,15 @@ function heatmap(
         colorrange=(colorrange_min, colorrange_max),
         colorscale=cscale
     )
-    # if interactive
-    #     Colorbar(fig[1,2], hm, label="")
-    # else
-        Colorbar(
-            fig[1,2], 
-            hm, 
-            ticklabelsize=Int(fontsize), 
-            label=label,
-            labelsize=Int(fontsize),
-            size = round(Int, sizex*12/2000),
-            ticks=colorbarticks
-        )
-    # end
+    Colorbar(
+        fig[1,2], 
+        hm, 
+        ticklabelsize=Int(fontsize), 
+        label=label,
+        labelsize=Int(fontsize),
+        size = round(Int, sizex*12/2000),
+        ticks=colorbarticks
+    )
     if critical_level > 0.0
         lines!(
             ax,

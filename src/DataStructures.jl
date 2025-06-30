@@ -26,11 +26,6 @@ Grid(;
     y::Vector{<:AbstractFloat}, 
     z::Vector{<:AbstractFloat}
 ) = Grid(nx, ny, nz, lx, ly, lz, x, y, z)
-# Grid{T,I}(;
-#     nx::I, ny::I, nz::I, lx::T, ly::T, lz::T,
-#     x::Vector{T}, y::Vector{T}, z::Vector{T}
-# ) where {T<:AbstractFloat, I<:Signed} = Grid(nx, ny, nz, lx, ly, lz, x, y, z)
-
 
 
 struct ScalarData{T,I} <: AbstractData{T,I}

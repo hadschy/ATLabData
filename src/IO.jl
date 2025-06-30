@@ -3,7 +3,7 @@ module IO
 using NetCDF
 using ..DataStructures
 
-export load, file_for_time, Grid_from_file, search_inifile
+export load, file_for_time, Grid_from_file, search_inifile, VAR
 
 
 """
@@ -81,7 +81,9 @@ end
     Loading data that is stored in a single file.
 """
 function ScalarData_from_file(fieldfile::String)::ScalarData
-    if startswith(fieldfile, "flow.")
+    verbose("ScalarData", fieldfile)
+    filename = split(fieldfile, "/")[end]
+    if startswith(filename, "flow.") || startswith(filename, "scal.")
         return ScalarData_from_raw(fieldfile)
     else
         return ScalarData_from_visuals(fieldfile)
@@ -89,13 +91,19 @@ function ScalarData_from_file(fieldfile::String)::ScalarData
 end
 
 
-function ScalarData_from_raw(fieldfile::String)#::ScalarData{Float64,Int32}
-    error("Loading raw ATLab data not yet supported.")
+function ScalarData_from_raw(fieldfile::String)::ScalarData{Float64, Int32}
+    grid = Grid_from_file(dirname(fieldfile))
+    buffer, t = Array_from_rawfile(grid, fieldfile)
+    return ScalarData(
+        name = splitpath(fieldfile)[end],
+        grid = grid,
+        time = t,
+        field = buffer
+    )
 end
 
 
-function ScalarData_from_visuals(fieldfile::String)::ScalarData{Float32,Int32}
-    verbose("ScalarData", fieldfile)
+function ScalarData_from_visuals(fieldfile::String)::ScalarData{Float32, Int32}
     grid = convert(Float32, Grid_from_file(dirname(fieldfile)))
     return ScalarData(
         name = splitpath(fieldfile)[end],
@@ -107,17 +115,19 @@ end
 
 
 """
-    Loading data from three files. Not check for physical consistency provided.
+    Loading data from three files. No check for physical consistency provided.
 """
 function VectorData_from_files(
         xfieldfile::String,
         yfieldfile::String,
         zfieldfile::String
     )::VectorData
-    if startswith(xfieldfile, "flow.")
+    verbose("VectorData", xfieldfile, yfieldfile, zfieldfile)
+    filename = split(xfieldfile, "/")[end]
+    if startswith(filename, "flow.") || startswith(filename, "scal.")
         return VectorData_from_raw(xfieldfile, yfieldfile, zfieldfile)
     else
-        return VectorData_from_visuals(yfieldfile, yfieldfile, zfieldfile)
+        return VectorData_from_visuals(xfieldfile, yfieldfile, zfieldfile)
     end
 end
 
@@ -126,8 +136,17 @@ function VectorData_from_raw(
         xfieldfile::String,
         yfieldfile::String,
         zfieldfile::String
-    )#::VectorData
-    error("LOading from raw ATLab data not yet implemented.")
+    )::VectorData{Float64, Int32}
+    grid = Grid_from_file(dirname(xfieldfile))
+    buffer, t = Array_from_rawfile(grid, xfieldfile)
+    return VectorData(
+        name = string(splitpath(xfieldfile)[end][1:end-2]),
+        grid = grid,
+        time = t,
+        xfield = buffer,
+        yfield = Array_from_rawfile(grid, yfieldfile)[1],
+        zfield = Array_from_rawfile(grid, zfieldfile)[1]
+    )
 end
 
 
@@ -136,7 +155,6 @@ function VectorData_from_visuals(
         yfieldfile::String,
         zfieldfile::String
     )
-    verbose("VectorData", xfieldfile, yfieldfile, zfieldfile)
     grid = convert(Float32, Grid_from_file(dirname(xfieldfile)))
     return VectorData(
         name = string(splitpath(xfieldfile)[end][1:end-2]),
@@ -153,12 +171,44 @@ end
     Load array from a binary file according to the information in _grid_.
 """
 function Array_from_file(
-        grid::Grid{T,I}, 
-        fieldfile::String
+        grid::Grid{T,I}, fieldfile::String
     )::Array{T,3} where {T<:AbstractFloat, I<:Signed}
     buffer = Vector{T}(undef, grid.nx*grid.ny*grid.nz)
     read!(fieldfile, buffer)
     return reshape(buffer, (grid.nx, grid.ny, grid.nz))
+end
+ 
+
+function Array_from_rawfile(
+        grid::Grid{T,I}, fieldfile::String
+    )::Tuple{Array{T, 3}, Float64} where {T<:AbstractFloat, I<:Signed}
+    io = open(fieldfile, "r")
+    """ 
+        Header contains: 
+        headersize/offset, nx, ny, nz, nt, time, visc, froude, schmidt
+        unformatted with no record markers
+    """
+    headersize = read(io, Int32) # First entry is the header length in bytes
+    seek(io, 5*sizeof(headersize))
+    time = read(io, Float64)
+    seek(io, headersize) # Jump to first last entry belonging to the header
+    buffer = Vector{Float64}(undef, grid.nx*grid.ny*grid.nz)
+    read!(io, buffer)
+    return reshape(buffer, (grid.nx, grid.ny, grid.nz)), time
+end
+
+
+function VAR(file::String, time::Real, var::String)::Vector{Float32}
+    times = ncread(file, "t")
+    Δt = time
+    index = 1
+    for i ∈ eachindex(times)
+        if abs(times[i] - time) < Δt
+            index = i
+            Δt = abs(times[i] - time)
+        end
+    end
+    return ncread(file, var)[:,index]
 end
 
 
@@ -331,44 +381,44 @@ function file_for_time(
 end
 
 
-""" 
-Search for the proper timestep that is nearest to _time_ based on _avg_all.nc_ 
-(from ncrcat). Return the correponding field string.
-"""
-function file_for_time_new(
-        dir::String, 
-        time::Float64, 
-        field::String, 
-        component::String=".0"
-    )::String
-    println("Searching for t = $(time)")
-    t, avgfile = time_from_avgall(dir, time)
-    timestep = split(avgfile, "avg", keepempty=false)[1]
-    timestep = split(timestep, ".")[1]
-    for i ∈ 1:(6-length(timestep))
-        timestep = "0"*timestep
-    end
-    filename = field * timestep
-    if component ∈ (".1", ".2", ".3")
-        filename = filename * component
-    end
-    return filename
-end
+# """ 
+# Search for the proper timestep that is nearest to _time_ based on _avg_all.nc_ 
+# (from ncrcat). Return the correponding field string.
+# """
+# function file_for_time_new(
+#         dir::String, 
+#         time::Float64, 
+#         field::String, 
+#         component::String=".0"
+#     )::String
+#     println("Searching for t = $(time)")
+#     t, avgfile = time_from_avgall(dir, time)
+#     timestep = split(avgfile, "avg", keepempty=false)[1]
+#     timestep = split(timestep, ".")[1]
+#     for i ∈ 1:(6-length(timestep))
+#         timestep = "0"*timestep
+#     end
+#     filename = field * timestep
+#     if component ∈ (".1", ".2", ".3")
+#         filename = filename * component
+#     end
+#     return filename
+# end
 
 
-function time_from_avgall(dir::String, time::Float64)::Tuple{Float64, String}
-    Δt = time
-    t = ncread(joinpath(dir, "avg_all.nc"), "t")
-    itime = 0
-    for i in eachindex(t)
-        if abs(time-t[i]) < Δt
-            Δt = abs(time-t[i])
-            itime = i
-        end
-    end
-    avgfile = 
-    return t[itime], avgfile
-end
+# function time_from_avgall(dir::String, time::Float64)::Tuple{Float64, String}
+#     Δt = time
+#     t = ncread(joinpath(dir, "avg_all.nc"), "t")
+#     itime = 0
+#     for i in eachindex(t)
+#         if abs(time-t[i]) < Δt
+#             Δt = abs(time-t[i])
+#             itime = i
+#         end
+#     end
+#     avgfile = 
+#     return t[itime], avgfile
+# end
 
 
 function verbose(dtype::String, files...; save::Bool=false)

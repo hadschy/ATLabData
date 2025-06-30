@@ -9,7 +9,7 @@ using .DataStructures
 
 include("IO.jl")
 using .IO
-    export load, Grid_from_file, search_inifile
+    export load, Grid_from_file, search_inifile, VAR
 
 include("DataOperations.jl")
 using .DataOperations
