@@ -16,7 +16,7 @@ using .DataOperations
     export size, display, +, -, *, ^, abs, log, convert, eltype
     export crop, gradient, norm, curl, logarithm
     export component
-    export rms, average
+    export rms, average, mean, flucs
 
 include("Visualization.jl")
 using .Visualization
@@ -29,7 +29,7 @@ using .Visualization
 
 include("Physics.jl")
 using .Physics
-    export vorticity, enstrophy, Ri
+    export vorticity, enstrophy, Ri, tke
 
 
 function __init__()

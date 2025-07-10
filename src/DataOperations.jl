@@ -1,6 +1,7 @@
 module DataOperations
 
 import Base: +, -, *, /, ^, size, display, abs, convert, deepcopy, eltype
+import StatsBase: mean
 
 using Base.Threads
 using Interpolations: interpolate, Gridded, Linear
@@ -11,7 +12,7 @@ using ..DataStructures
 export size, display, +, -, *, /, ^, abs, log, view, convert, eltype
 export crop, gradient, norm, curl, logarithm
 export component
-export rms, average
+export rms, average, mean, flucs
 
 
 # ------------------------------------------------------------------------------
@@ -515,6 +516,35 @@ function rms(data::ScalarData; coord=3)::AveragesData
 end
 
 
+"""
+Computes the mean field and returns it in same dimensions as data.
+"""
+function mean(data::VectorData)::VectorData
+    resx = zeros(eltype(data.xfield), size(data.xfield))
+    resy = zeros(eltype(data.yfield), size(data.yfield))
+    resz = zeros(eltype(data.zfield), size(data.zfield))
+    for k ∈ 1:data.grid.nz
+        resx[:,:,k] .= sum(data.xfield[:,:,k])./(data.grid.nx*data.grid.ny)
+        resy[:,:,k] .= sum(data.yfield[:,:,k])./(data.grid.nx*data.grid.ny)
+        resz[:,:,k] .= sum(data.zfield[:,:,k])./(data.grid.nx*data.grid.ny)
+    end
+    return VectorData("mean($(data.name))", data.grid, data.time, resx, resy, resz)
+end
+
+
+function mean(data::ScalarData)::ScalarData
+    res = zeros(eltype(data.field), size(data.field))
+    for k ∈ 1:data.grid.nz
+        res[:,:,k] .= sum(data.field[:,:,k])./(data.grid.nx*data.grid.ny)
+    end
+    return ScalarData("mean($(data.name))", data.grid, data.time, res)
+end
+
+
+flucs(data::VectorData)::VectorData = data - mean(data)
+
+
+
 # ------------------------------------------------------------------------------
 # -------------------- Additional operations -----------------------------------
 # ------------------------------------------------------------------------------
@@ -641,14 +671,24 @@ function crop(
 end
 
 
-# function smooth(data::AveragesData, block::Int)::AveragesData
-#     res = data.field
-#     kmin = block÷2
-#     kmax = data.grid.nz - block÷2
-#     for k ∈ kmin:kmax
-#         res[k] = sum(data.field[k-block÷2:k+block÷2])/block
+# function smooth(
+#         data::Vector{T},
+#         block::Int, 
+#         range::UnitRange=1:length(data)
+#     )::Vector{T} where {T<:AbstractFloat}
+#     res = data
+#     for k ∈ range
+#         if k <= block÷2
+#             boundarybuffer = ones(T, block÷2-k) .* data[1]
+#             res[k] = (sum(boundarybuffer) + sum(data[1:k+block÷2]))/block
+#         elseif k > length(data) - block÷2
+#             boundarybuffer = ones(T, block÷2 - (length(data)-k)) .* data[end]
+#             res[k] = (sum(boundarybuffer) + sum(data[k-block÷2:end]))/block
+#         else
+#             res[k] = sum(data[k-block÷2:k+block÷2])/block
+#         end
 #     end
-#     return AveragesData("smooth($(data.name))", data.time, data.grid, res)
+#     return res
 # end
 
 

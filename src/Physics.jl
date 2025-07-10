@@ -4,7 +4,7 @@ using ..DataStructures
 using ..DataOperations
 using ..IO
 
-export vorticity, enstrophy, Ri
+export vorticity, enstrophy, Ri, tke
 
 
 """
@@ -80,6 +80,17 @@ Ri(dir::String, time::Real)::ScalarData = Ri(
 
 function Reynolds_stress(u::VectorData)::Matrix
     # TODO
+end
+
+
+function tke(data::VectorData)::ScalarData
+    buffer = flucs(data)
+    return ScalarData(
+        "tke($(data.name))", 
+        data.grid, 
+        data.time,
+        0.5f0 .* (buffer.xfield.^2 .+ buffer.yfield.^2 .+ buffer.zfield.^2)
+    )
 end
 
 
