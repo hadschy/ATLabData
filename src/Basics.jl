@@ -1,4 +1,4 @@
-module DataOperations
+module Basics
 
 
 import Base: +, -, *, /, ^, size, display, abs, convert, deepcopy, eltype
