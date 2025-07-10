@@ -31,9 +31,9 @@ load(file::String, var::String)::AveragesData = AveragesData_from_NetCDF(file, v
 load(dir::String, var::String, time::Real, avg::Bool) = load(avgfile_for_time(dir, time), var)
 
 
-"""--------------------------------------------------------------------------"""
-
-
+# ------------------------------------------------------------------------------
+#                                   Grid
+# ------------------------------------------------------------------------------
 """ 
     Load the file _grid_ into composite type _Grid_
 """
@@ -77,6 +77,9 @@ function Grid_from_file(dir::String)::Grid
 end
 
 
+# ------------------------------------------------------------------------------
+#                               ScalarData
+# ------------------------------------------------------------------------------
 """
     Loading data that is stored in a single file.
 """
@@ -114,6 +117,9 @@ function ScalarData_from_visuals(fieldfile::String)::ScalarData{Float32, Int32}
 end
 
 
+# ------------------------------------------------------------------------------
+#                               VectorData
+# ------------------------------------------------------------------------------
 """
     Loading data from three files. No check for physical consistency provided.
 """
@@ -167,6 +173,9 @@ function VectorData_from_visuals(
 end
 
 
+# ------------------------------------------------------------------------------
+#                         Array from binary
+# ------------------------------------------------------------------------------
 """
     Load array from a binary file according to the information in _grid_.
 """
@@ -198,6 +207,9 @@ function Array_from_rawfile(
 end
 
 
+# ------------------------------------------------------------------------------
+#                            AveragesData
+# ------------------------------------------------------------------------------
 function VAR(file::String, time::Real, var::String)::Vector{Float32}
     times = ncread(file, "t")
     Δt = time
@@ -289,6 +301,9 @@ function AveragesData_to_txtfile(data::AveragesData, outdir::String)
 end
 
 
+# ------------------------------------------------------------------------------
+#                             Helping functions
+# ------------------------------------------------------------------------------
 function search_inifile(file::String, block::String, key::String)::String
     f = open(file, "r")
     res = ""

@@ -11,12 +11,19 @@ include("IO.jl")
 using .IO
     export load, Grid_from_file, search_inifile, VAR
 
-include("DataOperations.jl")
-using .DataOperations
+include("Basics.jl")
+using .Basics
     export size, display, +, -, *, ^, abs, log, convert, eltype
-    export crop, gradient, norm, curl, logarithm
+    export crop, norm, logarithm
     export component
-    export rms, average, mean, flucs
+
+include("Analysis.jl")
+using .Analysis
+    export gradient, curl
+
+include("Statistics.jl")
+using .Statistics
+    export average, rms, mean, flucs
 
 include("Visualization.jl")
 using .Visualization
