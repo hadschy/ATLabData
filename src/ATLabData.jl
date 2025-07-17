@@ -23,7 +23,7 @@ using .Analysis
 
 include("Statistics.jl")
 using .Statistics
-    export average, rms, mean, flucs
+    export average, rms, mean, flucs, wave, turbulence
 
 include("Visualization.jl")
 using .Visualization

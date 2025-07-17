@@ -58,7 +58,6 @@ VectorData(;
 struct AveragesData{T,I} <: AbstractData{T,I}
     name::String
     time::T
-    # range::Vector{T}
     grid::Grid{T,I}
     field::Vector{T}
 end
