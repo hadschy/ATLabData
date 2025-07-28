@@ -1,11 +1,12 @@
 module Statistics
 
 
-import StatsBase: mean
+import StatsBase: mean, mean!
 
 using ..DataStructures
 
-export average, rms, mean, flucs, wave, turbulence
+export average, rms, mean, mean!
+export flucs, flucs!, wave, wave!, turbulence, turbulence!
 
 
 """
@@ -93,6 +94,14 @@ function mean(data::VectorData)::VectorData
     return VectorData("mean($(data.name))", data.grid, data.time, resx, resy, resz)
 end
 
+function mean!(data::VectorData)::VectorData
+    for k ∈ 1:data.grid.nz
+        data.xfield[:,:,k] .= sum(view(data.xfield, :, :, k))./(data.grid.nx*data.grid.ny)
+        data.yfield[:,:,k] .= sum(view(data.yfield, :, :, k))./(data.grid.nx*data.grid.ny)
+        data.zfield[:,:,k] .= sum(view(data.zfield, :, :, k))./(data.grid.nx*data.grid.ny)
+    end
+    return data
+end
 
 function mean(data::ScalarData)::ScalarData
     res = zeros(eltype(data.field), size(data.field))
@@ -102,8 +111,46 @@ function mean(data::ScalarData)::ScalarData
     return ScalarData("mean($(data.name))", data.grid, data.time, res)
 end
 
+function mean!(data::ScalarData)
+    for k ∈ 1:data.grid.nz
+        data.field[:,:,k] .= sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
+    end
+end
 
+
+"""
+    flucs(data)
+Computes the fluctuation part of _data_ by subtracting the mean.
+"""
 flucs(data::AbstractData)::AbstractData = data - mean(data)
+
+function flucs!(data::ScalarData)
+    for k ∈ 1:data.grid.nz
+        data.field[:,:,k] .-= sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
+    end
+end
+
+function flucs!(res::ScalarData, data::ScalarData)
+    for k ∈ 1:data.grid.nz
+        res.field[:,:,k] .-= sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
+    end
+end
+
+function flucs!(data::VectorData)
+    for k ∈ 1:data.grid.nz
+        data.xfield[:,:,k] .-= sum(view(data.xfield, :, :, k))./(data.grid.nx*data.grid.ny)
+        data.yfield[:,:,k] .-= sum(view(data.yfield, :, :, k))./(data.grid.nx*data.grid.ny)
+        data.zfield[:,:,k] .-= sum(view(data.zfield, :, :, k))./(data.grid.nx*data.grid.ny)
+    end
+end
+
+function flucs!(res::VectorData, data::VectorData)
+    for k ∈ 1:data.grid.nz
+        res.xfield[:,:,k] .-= sum(view(data.xfield, :, :, k))./(data.grid.nx*data.grid.ny)
+        res.yfield[:,:,k] .-= sum(view(data.yfield, :, :, k))./(data.grid.nx*data.grid.ny)
+        res.zfield[:,:,k] .-= sum(view(data.zfield, :, :, k))./(data.grid.nx*data.grid.ny)
+    end
+end
 
 
 """
@@ -111,7 +158,7 @@ flucs(data::AbstractData)::AbstractData = data - mean(data)
 Wave-turbulence decomposition: Computes the wave part of __data__ regarding the 
 __mode__. Utilizes phase-avering.
 """
-function wave(data::ScalarData, mode::Int)
+function wave(data::ScalarData, mode::Int)::ScalarData
     mfield = mean(data).field
     wfield = zeros(eltype(data.field), size(data.field))
     for k ∈ 1:data.grid.nz
@@ -120,13 +167,21 @@ function wave(data::ScalarData, mode::Int)
     return ScalarData("wave($(data.name))", data.grid, data.time, wfield)
 end
 
+function wave!(data::ScalarData, mode::Int)
+    for k ∈ 1:data.grid.nz
+        data.field[:,:,k] .= phase_average(data.field[:,1,k], mode) .- begin
+            sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
+       end
+    end
+end
+
 
 """
     turbulence(data, modes)
 Wave-turbulence decomposition: Computes the turbulence part of __data__ by 
 subtracting the mean and the wave parts according to __modes__.
 """
-function turbulence(data::ScalarData, modes::Vector{Int})
+function turbulence(data::ScalarData, modes::Vector{Int})::ScalarData
     # TODO: optimize
     tfield = zeros(eltype(data.field), size(data.field))
     tfield .= data.field
@@ -137,6 +192,19 @@ function turbulence(data::ScalarData, modes::Vector{Int})
     tfield .= tfield .- mean(data).field
     return ScalarData("turb($(data.name))", data.grid, data.time, tfield)
 end
+
+function turbulence!(data::ScalarData, modes::Vector{Int})
+    buffer = ScalarData(
+        "buffer", data.grid, data.time, zeros(eltype(data.field), size(data))
+    )
+    for mode ∈ modes
+        buffer.field .= data.field
+        wave!(buffer, mode)
+        data.field .-= buffer.field
+    end
+    flucs!(data)
+end
+
 
 
 function phase_average(vec::Vector{<:AbstractFloat}, mode::Int)
