@@ -4,7 +4,7 @@ module Analysis
 using ..DataStructures
 
 using Base.Threads
-using Interpolations: interpolate, Gridded, Linear
+using Interpolations: interpolate, Gridded, Linear, Constant, NoInterp
 using FiniteDifferences: central_fdm, grad
 
 
@@ -33,37 +33,75 @@ _order_ determines the numerical error order for the derivatives.
 # end
 
 
-function gradient_single_thread!(res::Array{Float32}, data::ScalarData, itp, order::Int, ichunk::UnitRange)::Array{Float32}
+function gradient_single_thread!(
+        res::Array{T}, data::ScalarData{T,I}, itp, order::Int, ichunk::UnitRange
+    )::Array{T} where {T<:AbstractFloat, I<:Signed}
     println("Process $(threadid()) in gradient_single_thread")
     k = 1
     if ichunk[1]==1
-        iminoffset = round(Int, order/2+1)
+        iminoffset = round(Int, order/2+2)
     else
         iminoffset = 0
     end
     if ichunk[end]==data.grid.nx
-        imaxoffset = round(Int, order/2+1)
+        imaxoffset = round(Int, order/2+2)
     else
         imaxoffset = 0
     end
-    for j ∈ round(Int, order/2+1):round(Int, data.grid.ny - order/2-1)
-        for i ∈ round(Int, ichunk[1]+iminoffset):round(Int, ichunk[end] - imaxoffset)
-            buffer = grad(central_fdm(order, 1), itp, data.grid.x[i], data.grid.y[j])
-            res[1,i,j,k] = buffer[1]
-            res[2,i,j,k] = buffer[2]
-            res[3,i,j,k] = 0.0
+    for k ∈ round(Int, order/2+2):round(Int, data.grid.nz - order/2-2)
+        for j ∈ 1:data.grid.ny
+            for i ∈ round(Int, ichunk[1]+iminoffset):round(Int, ichunk[end] - imaxoffset)
+                buffer = grad(central_fdm(order, 1), itp, data.grid.x[i], data.grid.z[k])
+                # buffer = grad(central_fdm(order, 1), itp, i, k)
+                res[1,i,j,k] = buffer[1]
+                res[2,i,j,k] = 0.0
+                res[3,i,j,k] = buffer[2]
+            end
         end
     end
     return res
 end
 
 
-function gradient(data::ScalarData, order::Int)::VectorData
+function gradient_single_thread(
+        data::ScalarData{T,I}, itp, order::Int, ichunk::UnitRange
+    )::Array{T} where {T<:AbstractFloat, I<:Signed}
+    println("Process $(threadid()) in gradient_single_thread")
+    k = 1
+    if ichunk[1]==1
+        iminoffset = round(Int, order/2+2)
+    else
+        iminoffset = 0
+    end
+    if ichunk[end]==data.grid.nx
+        imaxoffset = round(Int, order/2+2)
+    else
+        imaxoffset = 0
+    end
+    res = Array{T}(undef, 3, length(ichunk), data.grid.ny, data.grid.nz)
+    for k ∈ round(Int, order/2+2):round(Int, data.grid.nz - order/2-2)
+        for j ∈ 1:data.grid.ny
+            for i ∈ round(Int, ichunk[1] + iminoffset):round(Int, ichunk[end] - imaxoffset)
+                buffer = grad(central_fdm(order, 1), itp, data.grid.x[i], data.grid.z[k])
+                # buffer = grad(central_fdm(order, 1), itp, i, k)
+                res[1,i-ichunk[1],j,k] = buffer[1]
+                res[2,i-ichunk[1],j,k] = 0.0
+                res[3,i-ichunk[1],j,k] = buffer[2]
+            end
+        end
+    end
+    return res
+end
+
+
+function gradient(
+        data::ScalarData{T,I}, order::Int
+    )::VectorData{T,I} where {T<:AbstractFloat, I<:Signed}
     # TODO: 3D, faster?, parallise
     println("Calculating gradient with $(nthreads()) threads...")
     printstyled("    "*data.name*"\n", color=:cyan)
     
-    res = Array{Float32}(undef, 3, data.grid.nx, data.grid.ny, data.grid.nz)
+    res = Array{T}(undef, 3, data.grid.nx, data.grid.ny, data.grid.nz)
     k = 1
     itp = interpolate(
         (data.grid.x, data.grid.z), # Nodes of the grid
@@ -76,8 +114,10 @@ function gradient(data::ScalarData, order::Int)::VectorData
         @sync begin
             @spawn begin
                 println("I am process $(threadid()) of $(nthreads())")
+                println("ichunk = $xchunk")
 
-                gradient_single_thread!(res, data, itp, order, xchunk)
+                # gradient_single_thread!(res, data, itp, order, xchunk)
+                res[:,xchunk,:,:] .= gradient_single_thread(data, itp, order, xchunk)
                 
                 println("... process $(threadid()) of $(nthreads()) is done")
             end

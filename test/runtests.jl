@@ -71,4 +71,10 @@ using Test
     #     "/home/thomas/simulations/periodic/shear_layer/Re22500/RIg1.0/dU2.0/FRb0.0/flow.30000.2",
     #     "/home/thomas/simulations/periodic/shear_layer/Re22500/RIg1.0/dU2.0/FRb0.0/flow.30000.3"
     # )
+
+
+    # # ------------------------ Analysis
+    # printstyled("Testing differntiel operations:", bold=true)
+    # @time data = load("/home/thomas/simulations/periodic/shear_layer/Re22500/RIg1.0/dU2.0/FRb0.0/flow.30000.1")
+    # @time gdata = gradient(data, 2)
 end
