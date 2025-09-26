@@ -87,7 +87,7 @@ of _data.field[:,:,slice]_.
 function heatmap(
         data::ScalarData;
         slice::Int = 1, 
-        sizex::Int = 2000,
+        sizex::Int = 1000,
         colormap=:RdGy,
         colorrange_max = maximum(data.field),
         colorrange_min = minimum(data.field),
