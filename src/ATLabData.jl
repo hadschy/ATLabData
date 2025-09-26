@@ -9,7 +9,8 @@ using .DataStructures
 
 include("IO.jl")
 using .IO
-    export load, Grid_from_file, search_inifile, VAR
+    export load, load! 
+    export file_for_time, Grid_from_file, search_inifile, VAR
 
 include("Basics.jl")
 using .Basics
@@ -23,7 +24,8 @@ using .Analysis
 
 include("Statistics.jl")
 using .Statistics
-    export average, rms, mean, flucs, wave, turbulence
+    export average, rms, mean, mean!
+    export flucs, flucs!, wave, wave!, turbulence, turbulence!
 
 include("Visualization.jl")
 using .Visualization

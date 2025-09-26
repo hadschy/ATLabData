@@ -28,7 +28,7 @@ Grid(;
 ) = Grid(nx, ny, nz, lx, ly, lz, x, y, z)
 
 
-struct ScalarData{T,I} <: AbstractData{T,I}
+mutable struct ScalarData{T,I} <: AbstractData{T,I}
     name::String
     grid::Grid{T,I}
     time::T
@@ -39,7 +39,7 @@ ScalarData(;
 ) = ScalarData(name, grid, time, field)
 
 
-struct VectorData{T,I} <: AbstractData{T,I}
+mutable struct VectorData{T,I} <: AbstractData{T,I}
     name::String
     grid::Grid{T,I}
     time::T
@@ -55,7 +55,7 @@ VectorData(;
 ) = VectorData(name, grid, time, xfield, yfield, zfield)
 
 
-struct AveragesData{T,I} <: AbstractData{T,I}
+mutable struct AveragesData{T,I} <: AbstractData{T,I}
     name::String
     time::T
     grid::Grid{T,I}

@@ -3,7 +3,8 @@ module IO
 using NetCDF
 using ..DataStructures
 
-export load, file_for_time, Grid_from_file, search_inifile, VAR
+export load, load! 
+export file_for_time, Grid_from_file, search_inifile, VAR
 
 
 """
@@ -29,6 +30,15 @@ load(xfile::String, yfile::String, zfile::String)::VectorData = VectorData_from_
 
 load(file::String, var::String)::AveragesData = AveragesData_from_NetCDF(file, var)
 load(dir::String, var::String, time::Real, avg::Bool) = load(avgfile_for_time(dir, time), var)
+
+"""
+    load!(data, file)
+Loads the content in _file_ into preallocated _data_ of type ScalarData.
+Assumes that _data_containes an already loaded _grid_.
+"""
+function load!(data::ScalarData, file::String)
+    ScalarData_from_file!(data, file)
+end
 
 
 # ------------------------------------------------------------------------------
@@ -114,6 +124,18 @@ function ScalarData_from_visuals(fieldfile::String)::ScalarData{Float32, Int32}
         time = time_from_file(fieldfile),
         field = Array_from_file(grid, fieldfile)
     )
+end
+
+
+function ScalarData_from_file!(data::ScalarData, fieldfile::String)
+    verbose("ScalarData", fieldfile)
+    filename = split(fieldfile, "/")[end]
+    if startswith(filename, "flow.") || startswith(filename, "scal.")
+        (data.field, data.time) = Array_from_rawfile(data.grid, fieldfile)
+    else
+        data.time = time_from_file(fieldfile)
+        data.field .= Array_from_file(data.grid, fieldfile)
+    end
 end
 
 
