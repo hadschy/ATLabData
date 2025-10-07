@@ -226,13 +226,16 @@ convert(T::Type{<:AbstractFloat}, grid::Grid)::Grid{T,Int32} = Grid{T,Int32}(
 convert(T::Type{<:AbstractFloat}, data::ScalarData)::ScalarData{T,Int32} = ScalarData{T,Int32}(
     data.name, convert(T, data.grid), data.time, data.field
 )
+convert(T::Type{<:AbstractFloat}, data::VectorData)::VectorData{T,Int32} = VectorData{T,Int32}(
+    data.name, convert(T, data.grid), data.time, data.xfield, data.yfield, data.zfield
+)
 
 
 """
     eltype(data)
 """
 eltype(grid::Grid)::Tuple = (eltype(grid.x), eltype(grid.nx))
-eltype(data::ScalarData)::Tuple = eltype(data.grid)
+eltype(data::AbstractData)::Tuple = eltype(data.grid)
 
 
 # """

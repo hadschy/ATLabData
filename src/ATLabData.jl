@@ -9,7 +9,9 @@ using .DataStructures
 
 include("IO.jl")
 using .IO
-    export load, load! 
+    export load, load!, loadgrid
+    export init
+    # To be removed from exports list
     export file_for_time, Grid_from_file, search_inifile, VAR
 
 include("Basics.jl")

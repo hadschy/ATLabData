@@ -3,8 +3,21 @@ module IO
 using NetCDF
 using ..DataStructures
 
-export load, load! 
+export load, load!, loadgrid
+export init
+
+# To be removed from exported list
 export file_for_time, Grid_from_file, search_inifile, VAR
+
+
+# ------------------------------------------------------------------------------
+#                           API (exported functions)
+# ------------------------------------------------------------------------------
+"""
+    loadgrid(gridfile) -> Grid
+Loads the grid data from the file _gridfile_ into the composite type _grid_.
+"""
+loadgrid(gridfile::String)::Grid = Grid_from_gridfile(gridfile)
 
 
 """
@@ -31,13 +44,50 @@ load(xfile::String, yfile::String, zfile::String)::VectorData = VectorData_from_
 load(file::String, var::String)::AveragesData = AveragesData_from_NetCDF(file, var)
 load(dir::String, var::String, time::Real, avg::Bool) = load(avgfile_for_time(dir, time), var)
 
+
 """
     load!(data, file)
-Loads the content in _file_ into preallocated _data_ of type ScalarData.
-Assumes that _data_containes an already loaded _grid_.
+Version of _load_ for preallocated data container.
 """
-function load!(data::ScalarData, file::String)
-    ScalarData_from_file!(data, file)
+load!(data::ScalarData, file::String) = ScalarData_from_file!(data, file)
+load!(
+    data::VectorData, 
+    xfile::String, yfile::String, zfile::String
+) = VectorData_from_file!(data, xfile, yfile, zfile)
+
+
+"""
+    init(grid; dims=1) -> AbstractData
+Initialize an empty data container. dims has to be an integer in of value 
+1 or 3. 1 correpsonds to _ScalarData_ while 3 returns _VectorData_. 
+Default for _dims_ is 1. _grid_ has to be of type _Grid_.
+"""
+function init(
+        grid::Grid{T,I};
+        dims::Int=1
+    )::AbstractData where {T<:AbstractFloat, I<:Signed}
+    if dims==1
+        return ScalarData(
+            name = "empty container",
+            grid = grid,
+            time = convert(T, 0.0),
+            field = Array{T, 3}(undef, grid.nx, grid.ny, grid.nz)
+        )
+    elseif dims==3
+        return VectorData(
+            name = "empty container",
+            grid = grid,
+            time = convert(T, 0.0),
+            xfield = Array{T, 3}(undef, grid.nx, grid.ny, grid.nz),
+            yfield = Array{T, 3}(undef, grid.nx, grid.ny, grid.nz),
+            zfield = Array{T, 3}(undef, grid.nx, grid.ny, grid.nz),
+        )
+    end
+end
+
+
+function init(gridfile::String; dims::Int=1, T::Type=Float64)::AbstractData
+    return init(convert(T, loadgrid(gridfile)), dims=dims)
 end
 
 
@@ -128,14 +178,27 @@ end
 
 
 function ScalarData_from_file!(data::ScalarData, fieldfile::String)
-    verbose("ScalarData", fieldfile)
     filename = split(fieldfile, "/")[end]
+    if eltype(data)[1]==Float64 && !(startswith(filename, "flow.") || startswith(filename, "scal."))
+        error(
+            "_data_ is initialized with type $(eltype(data)[1]) but $filename 
+            contains floats of type Float32"
+        )
+    elseif eltype(data)[1]==Float32 && (startswith(filename, "flow.") || startswith(filename, "scal."))
+        error(
+            "_data_ is initialized with type $(eltype(data)[1]) but $filename 
+            contains floats of type Float64"
+        )
+    end
+    verbose("ScalarData", fieldfile)
+    data.name = filename
     if startswith(filename, "flow.") || startswith(filename, "scal.")
-        (data.field, data.time) = Array_from_rawfile(data.grid, fieldfile)
+        data.field, data.time = Array_from_rawfile(data.grid, fieldfile)
     else
         data.time = time_from_file(fieldfile)
         data.field .= Array_from_file(data.grid, fieldfile)
     end
+    return nothing
 end
 
 
@@ -143,7 +206,7 @@ end
 #                               VectorData
 # ------------------------------------------------------------------------------
 """
-    Loading data from three files. No check for physical consistency provided.
+    Loading data from three files. No check for physical consistency.
 """
 function VectorData_from_files(
         xfieldfile::String,
@@ -192,6 +255,40 @@ function VectorData_from_visuals(
         yfield = Array_from_file(grid, yfieldfile),
         zfield = Array_from_file(grid, zfieldfile)
     )
+end
+
+
+function VectorData_from_files!(
+        data::VectorData, 
+        xfieldfile::String,
+        yfieldfile::String,
+        zfieldfile::String
+    )
+    filename = split(xfieldfile, "/")[end]
+    if eltype(data)[1]==Float64 && !(startswith(filename, "flow.") || startswith(filename, "scal."))
+        error(
+            "_data_ is initialized with type $(eltype(data)[1]) but $filename 
+            contains floats of type Float32"
+        )
+    elseif eltype(data)[1]==Float32 && (startswith(filename, "flow.") || startswith(filename, "scal."))
+        error(
+            "_data_ is initialized with type $(eltype(data)[1]) but $filename 
+            contains floats of type Float64"
+        )
+    end
+    verbose("VectorData", xfieldfile, yfieldfile, zfieldfile)
+    data.name = string(splitpath(xfieldfile)[end][1:end-2])
+    if startswith(filename, "flow.") || startswith(filename, "scal.")
+        data.xfield, data.time = Array_from_rawfile(data.grid, xfieldfile)
+        data.yfield .= Array_from_rawfile(data.grid, yfieldfile)[1]
+        data.zfield .= Array_from_rawfile(data.grid, zfieldfile)[1]
+    else
+        data.time = time_from_file(fieldfile)
+        data.xfield .= Array_from_file(data.grid, xfieldfile)
+        data.yfield .= Array_from_file(data.grid, yfieldfile)
+        data.zfield .= Array_from_file(data.grid, zfieldfile)
+    end
+    return nothing
 end
 
 
@@ -416,46 +513,6 @@ function file_for_time(
     end
     return f
 end
-
-
-# """ 
-# Search for the proper timestep that is nearest to _time_ based on _avg_all.nc_ 
-# (from ncrcat). Return the correponding field string.
-# """
-# function file_for_time_new(
-#         dir::String, 
-#         time::Float64, 
-#         field::String, 
-#         component::String=".0"
-#     )::String
-#     println("Searching for t = $(time)")
-#     t, avgfile = time_from_avgall(dir, time)
-#     timestep = split(avgfile, "avg", keepempty=false)[1]
-#     timestep = split(timestep, ".")[1]
-#     for i ∈ 1:(6-length(timestep))
-#         timestep = "0"*timestep
-#     end
-#     filename = field * timestep
-#     if component ∈ (".1", ".2", ".3")
-#         filename = filename * component
-#     end
-#     return filename
-# end
-
-
-# function time_from_avgall(dir::String, time::Float64)::Tuple{Float64, String}
-#     Δt = time
-#     t = ncread(joinpath(dir, "avg_all.nc"), "t")
-#     itime = 0
-#     for i in eachindex(t)
-#         if abs(time-t[i]) < Δt
-#             Δt = abs(time-t[i])
-#             itime = i
-#         end
-#     end
-#     avgfile = 
-#     return t[itime], avgfile
-# end
 
 
 function verbose(dtype::String, files...; save::Bool=false)
