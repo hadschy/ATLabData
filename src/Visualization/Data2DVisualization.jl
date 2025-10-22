@@ -132,7 +132,6 @@ function heatmap(
         titlesize=fontsize/2,
         backgroundcolor=:transparent
     )
-    rowsize!(fig.layout, 1, Aspect(1, data.grid.nz/data.grid.nx))
     resize_to_layout!(fig)
     hm = heatmap!(
         ax,
