@@ -8,7 +8,7 @@ export Grid, ScalarData, VectorData, AveragesData
 abstract type AbstractData{T<:AbstractFloat, I<:Signed} end
 
 
-struct Grid{T,I} <: AbstractData{T,I}
+mutable struct Grid{T,I} <: AbstractData{T,I}
     nx::I
     ny::I
     nz::I

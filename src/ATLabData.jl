@@ -12,7 +12,7 @@ using .IO
     export load, load!, loadgrid
     export init
     # To be removed from exports list
-    export file_for_time, Grid_from_file, search_inifile, VAR
+    export file_for_time, Grid_from_file, VAR
 
 include("Basics.jl")
 using .Basics
@@ -28,6 +28,11 @@ include("Statistics.jl")
 using .Statistics
     export average, rms, mean, mean!
     export flucs, flucs!, wave, wave!, turbulence, turbulence!
+
+include("Tools.jl")
+using .Tools
+    export shiftgrid!, transform_grid
+    export search_inifile
 
 include("Visualization.jl")
 using .Visualization

@@ -128,12 +128,14 @@ function flucs!(data::ScalarData)
     for k ∈ 1:data.grid.nz
         data.field[:,:,k] .-= sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
     end
+    data.name = "flucs($(data.name))"
 end
 
 function flucs!(res::ScalarData, data::ScalarData)
     for k ∈ 1:data.grid.nz
         res.field[:,:,k] .-= sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
     end
+    data.name = "flucs($(data.name))"
 end
 
 function flucs!(data::VectorData)
@@ -142,6 +144,7 @@ function flucs!(data::VectorData)
         data.yfield[:,:,k] .-= sum(view(data.yfield, :, :, k))./(data.grid.nx*data.grid.ny)
         data.zfield[:,:,k] .-= sum(view(data.zfield, :, :, k))./(data.grid.nx*data.grid.ny)
     end
+    data.name = "flucs($(data.name))"
 end
 
 function flucs!(res::VectorData, data::VectorData)
@@ -150,6 +153,7 @@ function flucs!(res::VectorData, data::VectorData)
         res.yfield[:,:,k] .-= sum(view(data.yfield, :, :, k))./(data.grid.nx*data.grid.ny)
         res.zfield[:,:,k] .-= sum(view(data.zfield, :, :, k))./(data.grid.nx*data.grid.ny)
     end
+    data.name = "flucs($(data.name))"
 end
 
 
@@ -173,6 +177,7 @@ function wave!(data::ScalarData, mode::Int)
             sum(view(data.field, :, :, k))./(data.grid.nx*data.grid.ny)
        end
     end
+    data.name = "wave($(data.name))"
 end
 
 
@@ -203,6 +208,7 @@ function turbulence!(data::ScalarData, modes::Vector{Int})
         data.field .-= buffer.field
     end
     flucs!(data)
+    data.name = "turb($(data.name))"
 end
 
 

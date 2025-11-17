@@ -7,7 +7,7 @@ export load, load!, loadgrid
 export init
 
 # To be removed from exported list
-export file_for_time, Grid_from_file, search_inifile, VAR
+export file_for_time, Grid_from_file, VAR
 
 
 # ------------------------------------------------------------------------------
@@ -423,35 +423,6 @@ end
 # ------------------------------------------------------------------------------
 #                             Helping functions
 # ------------------------------------------------------------------------------
-function search_inifile(file::String, block::String, key::String)::String
-    f = open(file, "r")
-    res = ""
-    corr_block = false
-    while ! eof(f)
-        s = readline(f)
-        # Correct block?
-        if startswith(s, "[")
-            if occursin(block, s)
-                corr_block = true
-            else
-                corr_block = false
-            end
-        end
-        # Check for key if in correct block
-        if corr_block && ! startswith(s, "[")
-            val = split(s, "=")
-            if length(val)==2
-                if key==val[1]
-                    res = val[2]
-                end
-            end
-        end
-    end
-    close(f)
-    return res
-end
-
-
 function timestep_from_filename(filename::String)::Int
     namestring = split(filename, "/")[end]
     namestring = split(namestring, ".")[1]
