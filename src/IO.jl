@@ -47,7 +47,8 @@ load(dir::String, var::String, time::Real, avg::Bool) = load(avgfile_for_time(di
 
 """
     load!(data, file)
-Version of _load_ for preallocated data container.
+Version of _load_ for preallocated data container. This function does not 
+    update the grid attribute!
 """
 load!(data::ScalarData, file::String) = ScalarData_from_file!(data, file)
 load!(
